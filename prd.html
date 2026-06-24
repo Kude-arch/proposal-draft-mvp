@@ -1299,11 +1299,12 @@
       </ul>
     </div>
 
-    <div class="open-q">
-      <h4>Q2. proposal-db-mvp 연동 방식</h4>
+    <div class="resolved-q">
+      <h4>✅ Q2. proposal-db-mvp 연동 방식 — 결정됨</h4>
       <ul>
-        <li>별도 Supabase 프로젝트이므로 Service Role Key 공유 또는 API 래퍼 구성 필요</li>
-        <li>아이템 이미지 URL: 원본 참조 vs. 이 시스템 Storage에 복사</li>
+        <li><strong>DB 연동</strong>: proposal-db-mvp의 Supabase Service Role Key를 이 시스템 환경변수에 추가하여 서버사이드에서 직접 쿼리</li>
+        <li><strong>이미지 URL</strong>: proposal-db-mvp Storage의 원본 URL을 그대로 참조 (별도 복사 없음). slide_cells.image_url에 원본 URL 저장</li>
+        <li><strong>주의</strong>: proposal-db-mvp Storage 버킷이 public이어야 PPTX 생성 시 이미지 다운로드 가능</li>
       </ul>
     </div>
 
