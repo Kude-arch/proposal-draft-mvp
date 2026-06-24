@@ -275,7 +275,7 @@
   <h1>제안서 초안 자동생성 시스템 MVP</h1>
   <p>건설사업관리 용역 제안서 초안 작성 자동화 — Product Requirements Document</p>
   <div class="badges">
-    <span class="badge">v0.2</span>
+    <span class="badge">v0.5</span>
     <span class="badge">2026-06-24</span>
     <span class="badge">Next.js · Supabase · Gemini</span>
     <span class="badge">격자 레이아웃 · PPTX 출력</span>
@@ -1127,45 +1127,77 @@
       슬라이드 규격은 제안서 전체에 하나를 적용합니다. 내보내기 단계에서 변경하면 모든 슬라이드에 동일하게 적용됩니다.
     </div>
 
+    <div class="callout blue">
+      <strong>핵심 설계 원칙:</strong> PPTX 내보내기 결과물은 단순 "이미지 짜깁기"가 아닌, <strong>텍스트·벡터·이미지가 레이어별로 분리된 구조화 출력물</strong>이어야 합니다.
+      Illustrator에서 열었을 때 최소한의 재작업으로 최종본을 완성할 수 있도록 각 요소를 편집 가능한 상태로 전달하는 것이 목표입니다.
+    </div>
+
     <h3>레이아웃 → PPTX 변환 규칙</h3>
     <table>
-      <tr><th>항목</th><th>규격</th><th>이유</th></tr>
+      <tr><th>항목</th><th>규격</th><th>Illustrator 편집 가능 여부</th></tr>
       <tr>
         <td>외곽 여백</td>
         <td>상·하·좌·우 각각 mm 단위 설정 가능<br><small style="color:var(--muted);">기본값: 상·하·좌·우 각 20mm</small></td>
-        <td>발주처별 제출 규격 대응, AI 편집 시 여백 확보</td>
+        <td>발주처별 제출 규격 대응. PDF→AI 변환 시 여백 구조 유지</td>
       </tr>
       <tr>
         <td>셀 간 여백 (gutter)</td>
         <td>열 간격·행 간격 각각 mm 단위 설정 가능<br><small style="color:var(--muted);">기본값: 2mm</small></td>
-        <td>셀 구분 명확화, 밀도 조정</td>
+        <td>셀 구분 명확화. 간격 값이 mm 정밀도로 계산되어 삽입됨</td>
       </tr>
       <tr>
-        <td>셀 내 이미지</td>
-        <td>셀 영역 100% 채움 (원본 비율 유지, 중앙 크롭)</td>
-        <td>AI에서 잘라내기 재조정 가능</td>
+        <td><strong>🖊 텍스트 레이어</strong></td>
+        <td>섹션 제목, 아이템 캡션·설명을 <strong>pptxgenjs 텍스트 박스로 삽입</strong> (아웃라인 변환 없음)</td>
+        <td>✅ PDF→AI 변환 후 실제 텍스트로 편집 가능. 폰트·크기·색상 변경, 텍스트 내용 수정 가능</td>
+      </tr>
+      <tr>
+        <td><strong>📐 벡터 레이어</strong></td>
+        <td>격자 구분선·셀 경계 프레임을 <strong>pptxgenjs Shape 객체 (사각형·선분)로 삽입</strong></td>
+        <td>✅ PDF→AI 변환 후 벡터 패스로 보존. 색상·두께·형태 수정 가능. 삭제 후 재구성 가능</td>
+      </tr>
+      <tr>
+        <td><strong>🖼 이미지 레이어</strong></td>
+        <td>아이템 이미지를 원본 고해상도 PNG로 정위치 삽입. 셀 영역 100% 채움 (중앙 크롭)</td>
+        <td>✅ AI에서 재배치·크롭·마스킹 가능. 원본 해상도 유지 (최소 1000px)</td>
       </tr>
       <tr>
         <td>빈 셀</td>
-        <td>연한 회색 사각형 (#E5E7EB) + 셀 번호 텍스트</td>
-        <td>AI 편집 시 위치 파악</td>
-      </tr>
-      <tr>
-        <td>이미지 해상도</td>
-        <td>원본 PNG 그대로 삽입 (최소 1000px)</td>
-        <td>화질 손실 없이 AI 편집</td>
+        <td>연한 회색 사각형 (#E5E7EB) + "빈 셀" 텍스트 박스</td>
+        <td>위치·크기 파악 후 AI에서 콘텐츠 직접 추가</td>
       </tr>
       <tr>
         <td>슬라이드 노트</td>
-        <td>섹션명 | 레이아웃 | 셀0: 아이템ID, 셀1: 아이템ID …</td>
-        <td>AI 편집 후 추적 가능</td>
-      </tr>
-      <tr>
-        <td>텍스트 요소</td>
-        <td>아웃라인 변환 없이 텍스트 박스로 삽입</td>
-        <td>AI에서 텍스트 편집 가능</td>
+        <td>섹션명 | 레이아웃 | 셀0: 아이템ID, 셀1: 아이템ID … | 여백 설정값</td>
+        <td>AI 편집 후 원본 아이템 추적 가능. 재등록 시 proposal-db-mvp와 연결</td>
       </tr>
     </table>
+
+    <h3>AI(Adobe Illustrator) 워크플로우</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
+      <div class="callout green">
+        <strong>권장 흐름</strong>
+        <ol style="margin-top:8px; padding-left:18px; font-size:13px; line-height:1.9;">
+          <li>이 시스템에서 PPTX 다운로드</li>
+          <li>PowerPoint에서 PDF 내보내기 (인쇄 품질)</li>
+          <li>Illustrator에서 PDF 열기<br><small style="color:var(--muted);">텍스트·벡터·이미지 레이어 분리됨</small></li>
+          <li>디자인 마무리 (타이포, 색상, 장식 요소)</li>
+          <li>완성 슬라이드 PNG → proposal-db-mvp 재등록</li>
+        </ol>
+      </div>
+      <div class="callout orange">
+        <strong>출력 요소별 AI 편집 항목</strong>
+        <ul style="margin-top:8px; font-size:13px; line-height:1.9;">
+          <li><strong>텍스트:</strong> 폰트·크기·간격·색상·내용</li>
+          <li><strong>격자 프레임:</strong> 선 두께·색상·패스 편집</li>
+          <li><strong>이미지:</strong> 재배치·크롭·마스킹·효과</li>
+          <li><strong>레이아웃:</strong> 여백 재조정, 셀 이동</li>
+        </ul>
+        <p style="margin-top:8px; font-size:12px; color:var(--muted);">
+          <strong>P2 목표:</strong> 슬라이드별 SVG 내보내기 — 텍스트·벡터·이미지 완전 분리<br>
+          <strong>P3 목표:</strong> 레이어드 PDF — Illustrator 레이어별 선택 편집
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- 11. 범위 -->
@@ -1273,13 +1305,17 @@
       <div class="milestone-number">5</div>
       <div class="milestone-content">
         <h4>M5. PPTX 내보내기 + 마무리</h4>
-        <p>예상 소요: 2~3일</p>
+        <p>예상 소요: 3~4일</p>
         <ul>
           <li>슬라이드 규격 선택 UI (A4 세로 / A3 가로 / 직접 입력)</li>
-          <li>pptxgenjs로 격자 레이아웃 mm 계산 + 이미지 삽입</li>
+          <li>pptxgenjs로 격자 레이아웃 mm 계산 + 정위치 삽입</li>
+          <li><strong>[구조화 출력]</strong> 텍스트 박스 삽입: 섹션 제목, 아이템 캡션 → AI에서 편집 가능한 텍스트로</li>
+          <li><strong>[구조화 출력]</strong> 벡터 Shape 삽입: 격자 구분선·셀 경계 프레임 → PDF 변환 후 벡터 유지</li>
+          <li><strong>[구조화 출력]</strong> 고해상도 이미지 정위치 삽입 → 원본 PNG 크기 유지</li>
           <li>섹션 구분 슬라이드 + 표지 슬라이드</li>
-          <li>슬라이드 노트에 메타데이터 삽입</li>
+          <li>슬라이드 노트에 메타데이터 + 여백 설정값 삽입</li>
           <li>전체 플로우 QA + 비개발자 사용 테스트</li>
+          <li>PDF→AI 변환 후 텍스트·벡터·이미지 편집 가능 여부 검증</li>
         </ul>
       </div>
     </div>
@@ -1336,12 +1372,19 @@
     </div>
 
     <div class="resolved-q">
-      <h4>✅ Q5. PPTX → Illustrator 워크플로우 — 결정됨</h4>
+      <h4>✅ Q5. PPTX → Illustrator 워크플로우 — 확장 방향 결정됨</h4>
       <ul>
-        <li><strong>이상적 흐름</strong>: PPTX → PDF 내보내기 → Illustrator에서 열어 편집. 레이어 구조는 단순하지만 텍스트·벡터 편집 가능</li>
-        <li><strong>현실</strong>: PPTX를 Illustrator로 직접 넘기지 못하는 경우가 많아 담당자가 시스템 미리보기를 보면서 AI에서 직접 제작하는 방식으로 운영 중. 이 시스템의 PPTX는 <strong>레이아웃·아이템 배치 참고용 초안</strong>으로 활용</li>
-        <li><strong>역방향 흐름 (AI 편집 완료 후 DB 재등록)</strong>: Illustrator에서 완성된 슬라이드 이미지를 proposal-db-mvp에 새 아이템으로 등록하여 재활용 — 이 기능은 <strong>proposal-db-mvp 시스템에서 담당</strong> (이 MVP 범위 외)</li>
-        <li><strong>이 시스템의 역할 명확화</strong>: 완성본 제작 도구가 아닌, 아이템 배치 구성을 빠르게 결정해주는 <strong>"초안 설계 도구"</strong></li>
+        <li><strong>1차 목표 (MVP)</strong>: 아이템 배치 구성을 빠르게 결정해주는 <strong>"초안 설계 도구"</strong>. 레이아웃·아이템 배치를 AI가 자동으로 잡아주고 사용자가 검토·수정하는 구조</li>
+        <li><strong>궁극 목표</strong>: 단순 배치 참고용을 넘어, <strong>Illustrator 작업량을 최소화하는 구조화된 출력물</strong> 제공. 텍스트·벡터·이미지를 분리하여 넘김으로써 AI에서 재제작 부담을 줄이는 것이 최종 지향점
+          <ul style="margin-top:6px;">
+            <li>텍스트 박스 (섹션 제목, 캡션) → PDF→AI 변환 후 실제 텍스트로 편집 가능</li>
+            <li>격자 구분선·프레임 → Shape 객체로 삽입 → PDF 변환 후 벡터 패스 유지</li>
+            <li>아이템 이미지 → 원본 고해상도 PNG 정위치 embed → AI에서 재배치·마스킹 가능</li>
+            <li><span style="color:#2563eb;">P2</span> 슬라이드별 SVG 내보내기 — 텍스트·벡터·이미지 완전 분리된 구조</li>
+            <li><span style="color:#9333ea;">P3</span> 레이어드 PDF 내보내기 — Illustrator에서 레이어별 선택 편집</li>
+          </ul>
+        </li>
+        <li><strong>역방향 흐름</strong>: Illustrator 완성본 → PNG → proposal-db-mvp에 새 아이템으로 등록·재활용 — <strong>proposal-db-mvp 시스템에서 담당</strong></li>
       </ul>
     </div>
   </div>
@@ -1350,7 +1393,7 @@
 
 <footer>
   <div class="container">
-    제안서 초안 자동생성 시스템 MVP — PRD v0.2 &nbsp;|&nbsp; 2026-06-24<br>
+    제안서 초안 자동생성 시스템 MVP — PRD v0.5 &nbsp;|&nbsp; 2026-06-24<br>
     <span style="opacity:0.6;">미래사업팀 내부 검토용 문서</span>
   </div>
 </footer>
