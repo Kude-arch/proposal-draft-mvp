@@ -1324,11 +1324,13 @@
       </ul>
     </div>
 
-    <div class="open-q">
-      <h4>Q4. RFP 파일 형식</h4>
+    <div class="resolved-q">
+      <h4>✅ Q4. RFP 파일 형식 — 결정됨</h4>
       <ul>
-        <li>주로 사용되는 공고문 형식 (PDF, HWP, Word) — HWP는 MVP 제외, 사전 PDF 변환 필요</li>
-        <li>Gemini는 PDF를 직접 처리 가능 (File API 활용)</li>
+        <li><strong>실제 사용 형식</strong>: PDF / HWP / Excel 세 가지</li>
+        <li><strong>PDF</strong> <span class="tag green">P1 완전 지원</span> — Gemini File API로 직접 파싱. 텍스트·표·목차 추출 가능</li>
+        <li><strong>Excel</strong> <span class="tag green">P1 완전 지원</span> — <code>xlsx</code> 라이브러리(Node.js)로 파싱 후 텍스트 변환 → Gemini 전달. 공정표·내역서 형태의 RFP에 대응</li>
+        <li><strong>HWP</strong> <span class="tag orange">MVP 제외 → 사전 변환 안내</span> — HWP 직접 파싱 라이브러리가 불안정하고 라이선스 제약 있음. MVP에서는 업로드 시 "HWP는 PDF로 변환 후 업로드해 주세요" 안내 메시지 표시. 추후 Hancom API 또는 HWP.js 도입 검토</li>
       </ul>
     </div>
 
