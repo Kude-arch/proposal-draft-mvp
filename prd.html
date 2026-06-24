@@ -584,7 +584,32 @@
       </tr>
     </table>
 
-    <h3>F6. PPTX 내보내기</h3>
+    <h3>F6. 여백 설정</h3>
+    <table class="priority-table">
+      <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
+      <tr>
+        <td>외곽 여백 설정</td>
+        <td><span class="p1">P1</span></td>
+        <td>상·하·좌·우 여백을 mm 단위로 각각 독립 설정. 발주처별 제출 규격에 맞춤 (기본값: 상10·하10·좌15·우10)</td>
+      </tr>
+      <tr>
+        <td>셀 간 여백 설정</td>
+        <td><span class="p1">P1</span></td>
+        <td>열 간격(gutter_col)과 행 간격(gutter_row)을 mm 단위로 각각 설정 (기본값: 2mm)</td>
+      </tr>
+      <tr>
+        <td>여백 프리셋</td>
+        <td><span class="p2">P2</span></td>
+        <td>자주 쓰는 발주처별 여백 조합을 저장·불러오기</td>
+      </tr>
+      <tr>
+        <td>실시간 미리보기 반영</td>
+        <td><span class="p2">P2</span></td>
+        <td>여백 변경 시 편집 화면의 슬라이드 미리보기에 즉시 반영</td>
+      </tr>
+    </table>
+
+    <h3>F7. PPTX 내보내기</h3>
     <table class="priority-table">
       <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
       <tr>
@@ -595,7 +620,7 @@
       <tr>
         <td>격자 레이아웃 PPTX 생성</td>
         <td><span class="p1">P1</span></td>
-        <td>각 슬라이드의 격자 레이아웃대로 아이템 이미지를 정확한 위치·크기로 삽입하여 PPTX 생성</td>
+        <td>각 아이템의 col_start·row_start·col_span·row_span 기반으로 mm 좌표를 계산하여 PPTX에 정확히 삽입</td>
       </tr>
       <tr>
         <td>섹션 구분 슬라이드</td>
@@ -636,19 +661,26 @@
     <h2>슬라이드 레이아웃 시스템</h2>
 
     <div class="callout blue">
-      <strong>핵심 개념:</strong> 제안서 1슬라이드 = 1페이지. 이 페이지를 <strong>최대 12셀의 격자</strong>로 분할하고,
-      각 셀에 proposal-db-mvp의 아이템 이미지 1개를 배치합니다.
-      AI가 섹션 특성에 맞는 분할 방식을 결정하고, 사람이 최종 검토·수정합니다.
+      <strong>핵심 개념:</strong> 제안서 1슬라이드 = 1페이지. 이 페이지를 <strong>최대 4열 × 3행(12칸)의 격자</strong>로 분할합니다.
+      각 아이템은 <strong>1칸 이상을 병합하여 차지할 수 있습니다</strong> — 예: 4×3 격자에서 지도 이미지가 좌상단 3열×2행 영역을 차지하고, 나머지 공간에 다른 아이템 배치.
+      AI가 섹션 특성에 맞는 격자 구성과 아이템별 점유 영역을 결정하고, 사람이 최종 검토·수정합니다.
     </div>
 
-    <h3>레이아웃 템플릿 (예시)</h3>
-    <div class="layout-gallery">
+    <h3>격자 기반 & 셀 병합 개념</h3>
+    <p>각 아이템은 <code>col_start, row_start, col_span, row_span</code> 4개 값으로 위치와 크기를 정의합니다.
+    하나의 슬라이드 안에 크기가 서로 다른 여러 아이템이 겹치지 않게 배치됩니다.</p>
+
+    <div class="layout-gallery" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
+
+      <!-- 단일 -->
       <div class="layout-card">
         <div class="layout-preview" style="grid-template-columns:1fr; grid-template-rows:1fr;">
           <div class="layout-cell"></div>
         </div>
         <div class="label">단일 (1×1)</div>
       </div>
+
+      <!-- 좌우 2분할 -->
       <div class="layout-card">
         <div class="layout-preview" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr;">
           <div class="layout-cell"></div>
@@ -656,67 +688,82 @@
         </div>
         <div class="label">좌우 2분할</div>
       </div>
-      <div class="layout-card">
-        <div class="layout-preview" style="grid-template-columns:1fr; grid-template-rows:1fr 1fr;">
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-        </div>
-        <div class="label">상하 2분할</div>
-      </div>
+
+      <!-- 2×2 -->
       <div class="layout-card">
         <div class="layout-preview" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;">
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div>
         </div>
-        <div class="label">2×2 (4셀)</div>
+        <div class="label">2×2 (4칸)</div>
       </div>
+
+      <!-- 3×2 -->
       <div class="layout-card">
         <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr;">
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
         </div>
-        <div class="label">3×2 (6셀)</div>
+        <div class="label">3×2 (6칸)</div>
       </div>
-      <div class="layout-card">
-        <div class="layout-preview" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-        </div>
-        <div class="label">2×3 (6셀)</div>
-      </div>
+
+      <!-- 3×3 -->
       <div class="layout-card">
         <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
-          <div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
         </div>
-        <div class="label">3×3 (9셀)</div>
+        <div class="label">3×3 (9칸)</div>
       </div>
+
+      <!-- 4×3 (최대) -->
       <div class="layout-card">
-        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr 1fr;">
-          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
-          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
-          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
-          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
         </div>
-        <div class="label">3×4 (12셀)</div>
+        <div class="label">4×3 (12칸 최대)</div>
       </div>
+
+      <!-- 병합 예시 1: 4×3, 좌상단 3×2 지도 + 나머지 -->
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+          <div class="layout-cell" style="grid-column:span 3; grid-row:span 2; background:#bfdbfe;"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+        </div>
+        <div class="label">4×3 · 지도 3×2 + 소항목</div>
+      </div>
+
+      <!-- 병합 예시 2: 3×3, 좌측 1×3 큰 이미지 + 우측 2×3 -->
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+          <div class="layout-cell" style="grid-column:span 1; grid-row:span 3; background:#bfdbfe;"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div>
+        </div>
+        <div class="label">3×3 · 좌측 세로 대형 + 우측 소항목</div>
+      </div>
+
+      <!-- 병합 예시 3: 4×3, 상단 전체 폭 + 하단 4분할 -->
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+          <div class="layout-cell" style="grid-column:span 4; grid-row:span 2; background:#bfdbfe;"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+        </div>
+        <div class="label">4×3 · 상단 전체 + 하단 4분할</div>
+      </div>
+
+    </div>
+
+    <div class="callout blue" style="margin-top:8px; font-size:13px;">
+      <strong>파란색 셀</strong>은 여러 칸을 병합한 아이템 예시입니다.
+      실제 배치는 AI가 섹션 특성과 아이템 형태(가로형/세로형/정방형)를 고려하여 자동 결정합니다.
     </div>
 
     <h3>레이아웃 선택 기준 (AI 판단 로직)</h3>
@@ -749,13 +796,18 @@
       </tr>
     </table>
 
-    <h3>PPTX 변환 규칙</h3>
-    <ul>
-      <li>각 셀의 크기와 위치는 슬라이드 전체 크기 대비 <strong>정확한 비율(mm 단위)</strong>로 계산하여 PPTX에 삽입</li>
-      <li>셀 간 여백(gutter)은 기본 2mm, 슬라이드 외곽 여백은 기본 5mm (MVP에서 고정, 추후 조정 가능)</li>
-      <li>빈 셀은 연한 회색 배경으로 처리하여 후속 AI 작업 시 자리 파악 가능</li>
-      <li>슬라이드 노트에 섹션명, 각 셀의 아이템 ID 기록</li>
-    </ul>
+    <h3>아이템 위치·크기 계산 공식</h3>
+    <div class="callout blue" style="font-size:13px;">
+      <strong>입력값:</strong> 슬라이드 크기(mm), 여백 설정(상·하·좌·우·열 간격·행 간격), 격자(cols × rows), 아이템(col_start, row_start, col_span, row_span)<br><br>
+      <code>
+        cell_w = (슬라이드 너비 − 좌여백 − 우여백 − (cols−1) × 열간격) ÷ cols<br>
+        cell_h = (슬라이드 높이 − 상여백 − 하여백 − (rows−1) × 행간격) ÷ rows<br><br>
+        item_x = 좌여백 + (col_start−1) × (cell_w + 열간격)<br>
+        item_y = 상여백 + (row_start−1) × (cell_h + 행간격)<br>
+        item_w = col_span × cell_w + (col_span−1) × 열간격<br>
+        item_h = row_span × cell_h + (row_span−1) × 행간격
+      </code>
+    </div>
   </div>
 
   <!-- 7. 화면 구성 -->
@@ -854,6 +906,7 @@
       <tr><td>special_conditions</td><td>text</td><td>특이사항 (자유 텍스트)</td></tr>
       <tr><td>rfp_file_url</td><td>text</td><td>업로드된 RFP 파일 Storage URL</td></tr>
       <tr><td>slide_size</td><td>jsonb</td><td>슬라이드 규격 {preset: "A4P"|"A3L"|"custom", width_mm, height_mm}</td></tr>
+      <tr><td>slide_margins</td><td>jsonb</td><td>여백 설정 {top_mm, bottom_mm, left_mm, right_mm, gutter_col_mm, gutter_row_mm}</td></tr>
       <tr><td>ai_analysis</td><td>jsonb</td><td>Gemini 분석 결과 (특성 분류, 섹션별 키워드)</td></tr>
       <tr><td>status</td><td>text</td><td>draft / analyzing / editing / exported</td></tr>
       <tr><td>created_at</td><td>timestamptz</td><td></td></tr>
@@ -883,17 +936,28 @@
       <tr><td>layout_rows</td><td>integer</td><td>격자 행 수</td></tr>
     </table>
 
-    <h3>slide_cells (슬라이드 내 각 셀)</h3>
+    <h3>slide_cells (슬라이드 내 배치된 아이템)</h3>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:8px;">
+      하나의 레코드 = 슬라이드 위에 배치된 아이템 1개. 병합 크기에 따라 1칸~12칸까지 점유 가능.
+    </p>
     <table>
       <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
       <tr><td>id</td><td>uuid</td><td>PK</td></tr>
       <tr><td>slide_id</td><td>uuid</td><td>FK → proposal_slides</td></tr>
-      <tr><td>cell_index</td><td>integer</td><td>셀 번호 (0부터, 행 우선 순서)</td></tr>
-      <tr><td>col_span</td><td>integer</td><td>열 병합 수 (기본 1)</td></tr>
-      <tr><td>row_span</td><td>integer</td><td>행 병합 수 (기본 1)</td></tr>
-      <tr><td>db_item_id</td><td>text</td><td>proposal-db-mvp 아이템 ID (null이면 빈 셀)</td></tr>
+      <tr><td>col_start</td><td>integer</td><td>시작 열 (1-based, 1 ~ layout_cols)</td></tr>
+      <tr><td>row_start</td><td>integer</td><td>시작 행 (1-based, 1 ~ layout_rows)</td></tr>
+      <tr><td>col_span</td><td>integer</td><td>점유 열 수 (기본 1, col_start + col_span − 1 ≤ layout_cols)</td></tr>
+      <tr><td>row_span</td><td>integer</td><td>점유 행 수 (기본 1, row_start + row_span − 1 ≤ layout_rows)</td></tr>
+      <tr><td>db_item_id</td><td>text</td><td>proposal-db-mvp 아이템 ID (null이면 빈 자리표시자)</td></tr>
       <tr><td>image_url</td><td>text</td><td>아이템 이미지 URL</td></tr>
     </table>
+    <div class="callout blue" style="font-size:13px; margin-top:4px;">
+      <strong>예시 — 4열×3행 슬라이드에 지도(3×2) + 소항목 4개 배치 시:</strong><br>
+      지도: col_start=1, row_start=1, col_span=3, row_span=2<br>
+      우측 상단: col_start=4, row_start=1, col_span=1, row_span=1<br>
+      우측 중단: col_start=4, row_start=2, col_span=1, row_span=1<br>
+      하단 4개: col_start=1~4, row_start=3, col_span=1, row_span=1
+    </div>
 
     <h3>site_documents (업로드 문서)</h3>
     <table>
@@ -1022,13 +1086,13 @@
       <tr><th>항목</th><th>규격</th><th>이유</th></tr>
       <tr>
         <td>외곽 여백</td>
-        <td>상하좌우 5mm (MVP 고정)</td>
-        <td>AI 편집 시 여백 확보</td>
+        <td>상·하·좌·우 각각 mm 단위 설정 가능<br><small style="color:var(--muted);">기본값: 상10·하10·좌15·우10mm</small></td>
+        <td>발주처별 제출 규격 대응, AI 편집 시 여백 확보</td>
       </tr>
       <tr>
         <td>셀 간 여백 (gutter)</td>
-        <td>2mm (MVP 고정)</td>
-        <td>셀 구분 명확화</td>
+        <td>열 간격·행 간격 각각 mm 단위 설정 가능<br><small style="color:var(--muted);">기본값: 2mm</small></td>
+        <td>셀 구분 명확화, 밀도 조정</td>
       </tr>
       <tr>
         <td>셀 내 이미지</td>
