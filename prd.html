@@ -44,9 +44,7 @@
       font-size: 13px;
       font-weight: 500;
     }
-
     .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-
     .toc {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -59,7 +57,6 @@
     .toc li { margin-bottom: 6px; }
     .toc a { color: var(--accent); text-decoration: none; font-size: 14px; }
     .toc a:hover { text-decoration: underline; }
-
     .section {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -94,7 +91,6 @@
     p { margin-bottom: 12px; color: var(--text); }
     ul, ol { padding-left: 20px; margin-bottom: 12px; }
     li { margin-bottom: 6px; }
-
     .callout {
       border-radius: 8px;
       padding: 16px 20px;
@@ -104,7 +100,6 @@
     .callout.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
     .callout.orange { background: var(--tag-orange); border-left: 4px solid #f97316; }
     .callout.green { background: var(--tag-green); border-left: 4px solid #16a34a; }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -125,7 +120,6 @@
       vertical-align: top;
     }
     tr:nth-child(even) td { background: var(--bg); }
-
     .tag {
       display: inline-block;
       border-radius: 6px;
@@ -137,9 +131,6 @@
     .tag.blue { background: var(--tag-blue); color: #1d4ed8; }
     .tag.green { background: var(--tag-green); color: #15803d; }
     .tag.orange { background: var(--tag-orange); color: #c2410c; }
-    .tag.red { background: var(--tag-red); color: #dc2626; }
-    .tag.purple { background: var(--tag-purple); color: #7e22ce; }
-
     .flow {
       display: flex;
       align-items: center;
@@ -172,7 +163,6 @@
       padding: 0 8px;
       flex-shrink: 0;
     }
-
     .screen-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -192,12 +182,10 @@
     }
     .screen-card ul { margin-bottom: 0; }
     .screen-card li { font-size: 13px; }
-
     .priority-table td:first-child { font-weight: 600; }
     .p1 { color: #dc2626; font-weight: 700; }
     .p2 { color: #d97706; font-weight: 700; }
     .p3 { color: #6b7280; }
-
     .milestone-row {
       display: flex;
       align-items: flex-start;
@@ -221,7 +209,6 @@
     .milestone-content h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
     .milestone-content p { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
     .milestone-content ul { font-size: 13px; }
-
     .open-q {
       background: #fefce8;
       border: 1px solid #fde68a;
@@ -233,6 +220,30 @@
     .open-q ul { font-size: 13px; }
     .open-q li { margin-bottom: 4px; }
 
+    /* 레이아웃 템플릿 시각화 */
+    .layout-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .layout-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .layout-card .label { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .layout-preview {
+      display: grid;
+      gap: 2px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      aspect-ratio: 3/2;
+    }
+    .layout-cell { background: var(--accent-light); }
+
     footer {
       text-align: center;
       color: var(--muted);
@@ -241,7 +252,6 @@
       border-top: 1px solid var(--border);
       margin-top: 40px;
     }
-
     @media (max-width: 640px) {
       .screen-grid { grid-template-columns: 1fr; }
       .section { padding: 24px 20px; }
@@ -255,10 +265,10 @@
   <h1>제안서 초안 자동생성 시스템 MVP</h1>
   <p>건설사업관리 용역 제안서 초안 작성 자동화 — Product Requirements Document</p>
   <div class="badges">
-    <span class="badge">v0.1 초안</span>
+    <span class="badge">v0.2</span>
     <span class="badge">2026-06-24</span>
-    <span class="badge">Next.js · Supabase · OpenAI</span>
-    <span class="badge">PPTX 출력</span>
+    <span class="badge">Next.js · Supabase · Gemini</span>
+    <span class="badge">격자 레이아웃 · PPTX 출력</span>
   </div>
 </div>
 
@@ -273,6 +283,7 @@
       <li><a href="#users">사용자 정의</a></li>
       <li><a href="#flow">핵심 사용자 플로우</a></li>
       <li><a href="#features">기능 요구사항</a></li>
+      <li><a href="#layout">슬라이드 레이아웃 시스템</a></li>
       <li><a href="#screens">화면 구성</a></li>
       <li><a href="#data">데이터 모델</a></li>
       <li><a href="#tech">기술 스택 & 아키텍처</a></li>
@@ -288,14 +299,13 @@
     <span class="section-number">01</span>
     <h2>제품 개요</h2>
     <p>
-      미래사업팀이 새로운 건설사업관리 용역을 수주할 때 작성하는 제안서는,
-      현장마다 조건이 달라 매번 처음부터 구성해야 합니다.
-      이 시스템은 <strong>현장 정보를 입력하면 AI가 사업여건을 분석하고, 과거 제안서 아이템 DB에서 목차별로 최적 슬라이드를 자동 배치</strong>하여
+      미래사업팀은 발주처가 제시한 목차 구조에 맞춰 건설사업관리 용역 제안서를 작성합니다.
+      이 시스템은 <strong>현장 정보를 입력하면 AI가 사업여건을 분석하고, 발주처 목차의 각 섹션에 과거 아이템 DB에서 적합한 내용을 격자 레이아웃으로 자동 구성</strong>하여
       PPTX 초안을 생성합니다.
     </p>
     <div class="callout blue">
-      <strong>핵심 가치:</strong> 제안서 초안 작성에 걸리는 시간을 <strong>수 일 → 수 시간</strong>으로 단축.
-      완성된 결과물이 아닌 "편집 가능한 좋은 초안"을 빠르게 확보합니다.
+      <strong>핵심 가치:</strong> 각 목차 섹션을 어떤 아이템으로, 어떤 레이아웃으로 채울지 결정하는 시간을
+      <strong>수 일 → 수 시간</strong>으로 단축합니다.
     </div>
 
     <h3>연관 시스템</h3>
@@ -308,7 +318,7 @@
       <tr>
         <td><strong>proposal-db-mvp</strong></td>
         <td>과거 제안서 이미지 키워드 DB</td>
-        <td>아이템 소스 DB — 이 시스템이 소비</td>
+        <td>아이템 소스 DB — 이 시스템이 읽기 전용으로 참조</td>
       </tr>
       <tr>
         <td><strong>이 MVP</strong></td>
@@ -333,16 +343,20 @@
         <th>이 시스템의 해결 방법</th>
       </tr>
       <tr>
-        <td>현장마다 과거 유사 자료를 일일이 찾아 복사·붙여넣기</td>
-        <td>AI가 사업여건 분석 후 DB에서 자동 검색·배치</td>
+        <td>발주처가 지정한 각 목차 섹션을 어떤 내용으로, 어떤 구성으로 채울지 매번 검토</td>
+        <td>AI가 현장 여건을 분석하여 섹션별 최적 아이템·레이아웃을 자동 제안</td>
       </tr>
       <tr>
-        <td>목차 구성을 매번 처음부터 검토</td>
-        <td>표준 목차 템플릿 + 현장 특성에 따른 가중치 조정</td>
+        <td>현장마다 과거 유사 자료를 일일이 찾아 복사·붙여넣기</td>
+        <td>proposal-db-mvp DB에서 자동 검색·배치, 후보 아이템 함께 제시</td>
       </tr>
       <tr>
         <td>어떤 자료가 어디 있는지 기억에 의존</td>
-        <td>proposal-db-mvp 키워드 DB 활용, 자동 연결</td>
+        <td>키워드 DB 활용, 현장 여건 기반 자동 연결</td>
+      </tr>
+      <tr>
+        <td>슬라이드 레이아웃 구성에 많은 시간 소요</td>
+        <td>최대 12분할 격자 레이아웃 템플릿을 AI가 선택·배치, 사람이 수정</td>
       </tr>
       <tr>
         <td>초안 완성까지 장시간 소요</td>
@@ -359,7 +373,7 @@
     <h3>주 사용자: 미래사업팀 담당자</h3>
     <ul>
       <li>건설·CM 도메인 전문가이지만 <strong>개발·IT 비전문가</strong></li>
-      <li>공고문(PDF/Word)을 받아 제안서를 작성하는 업무 담당</li>
+      <li>발주처의 공고문(PDF/Word)을 받아 제안서를 작성하는 업무 담당</li>
       <li>빠른 초안 생성 후 AI(일러스트레이터)로 후속 편집</li>
     </ul>
 
@@ -384,11 +398,11 @@
       <div class="flow-arrow">→</div>
       <div class="flow-step">② 현장 정보<br><small>입력 + 파일 업로드</small></div>
       <div class="flow-arrow">→</div>
-      <div class="flow-step">③ AI 분석<br><small>사업여건 파악</small></div>
+      <div class="flow-step">③ 목차 확인<br><small>발주처 목차 입력</small></div>
       <div class="flow-arrow">→</div>
-      <div class="flow-step">④ 초안 생성<br><small>목차별 아이템 배치</small></div>
+      <div class="flow-step">④ AI 분석<br><small>여건 분석 + 배치</small></div>
       <div class="flow-arrow">→</div>
-      <div class="flow-step">⑤ 웹 검토<br><small>수정·교체·순서 조정</small></div>
+      <div class="flow-step">⑤ 슬라이드 편집<br><small>레이아웃·아이템 수정</small></div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">⑥ PPTX<br><small>다운로드</small></div>
     </div>
@@ -410,31 +424,31 @@
       <tr>
         <td><strong>② 현장 정보</strong></td>
         <td>구조화 폼 입력 + RFP 파일 업로드 (선택)</td>
-        <td>입력값 저장, 파일 파싱(OpenAI) 후 핵심 정보 추출</td>
+        <td>파일 파싱(Gemini) 후 핵심 정보 추출, 폼 자동 채우기 제안</td>
         <td>5~15분</td>
       </tr>
       <tr>
-        <td><strong>③ AI 분석</strong></td>
-        <td>"분석 시작" 클릭 → 로딩 대기</td>
-        <td>현장 정보를 GPT-4o로 분석, 섹션별 키워드 및 가중치 생성</td>
-        <td>~1분 (자동)</td>
+        <td><strong>③ 목차 확인</strong></td>
+        <td>발주처 목차를 입력 또는 RFP에서 자동 추출된 목차 확인·수정</td>
+        <td>섹션 목록 저장</td>
+        <td>~5분</td>
       </tr>
       <tr>
-        <td><strong>④ 초안 생성</strong></td>
-        <td>분석 결과 확인 (섹션별 추천 키워드)</td>
-        <td>proposal-db-mvp에서 섹션별 아이템 검색·배치</td>
-        <td>~30초 (자동)</td>
+        <td><strong>④ AI 분석 & 초안 생성</strong></td>
+        <td>"초안 생성" 클릭 → 로딩 대기</td>
+        <td>Gemini로 사업여건 분석 → 섹션별 레이아웃 선택 + 아이템 배치</td>
+        <td>~2분 (자동)</td>
       </tr>
       <tr>
-        <td><strong>⑤ 웹 검토</strong></td>
-        <td>슬라이드 순서 변경, 아이템 교체, 삭제, 추가</td>
+        <td><strong>⑤ 슬라이드 편집</strong></td>
+        <td>레이아웃 변경, 셀 내 아이템 교체, 슬라이드 추가·삭제</td>
         <td>변경사항 즉시 저장</td>
-        <td>자유 (10분~수 시간)</td>
+        <td>자유 (30분~수 시간)</td>
       </tr>
       <tr>
         <td><strong>⑥ PPTX 내보내기</strong></td>
-        <td>"PPTX 다운로드" 클릭</td>
-        <td>서버에서 PPTX 생성 → 파일 다운로드</td>
+        <td>슬라이드 규격 선택 → "PPTX 다운로드" 클릭</td>
+        <td>서버에서 격자 레이아웃 기반 PPTX 생성 → 파일 다운로드</td>
         <td>~30초</td>
       </tr>
     </table>
@@ -456,12 +470,12 @@
       <tr>
         <td>RFP 파일 업로드</td>
         <td><span class="p1">P1</span></td>
-        <td>PDF 또는 Word 파일 업로드 → GPT-4o로 핵심 정보 자동 추출 → 폼에 자동 채우기 제안</td>
+        <td>PDF 또는 Word 파일 업로드 → Gemini로 핵심 정보 + 목차 자동 추출 → 폼에 채우기 제안</td>
       </tr>
       <tr>
         <td>추가 자료 업로드</td>
         <td><span class="p2">P2</span></td>
-        <td>현장 사진, 위치도 등 참고 이미지 첨부 (슬라이드에 직접 삽입 가능)</td>
+        <td>현장 사진, 위치도 등 참고 이미지 첨부 (슬라이드 셀에 직접 배치 가능)</td>
       </tr>
       <tr>
         <td>임시 저장</td>
@@ -470,18 +484,43 @@
       </tr>
     </table>
 
-    <h3>F2. AI 사업여건 분석</h3>
+    <h3>F2. 목차 관리</h3>
+    <table class="priority-table">
+      <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
+      <tr>
+        <td>목차 입력</td>
+        <td><span class="p1">P1</span></td>
+        <td>발주처가 지정한 목차를 직접 입력. RFP 파싱 시 자동 추출된 목차가 있으면 먼저 제안</td>
+      </tr>
+      <tr>
+        <td>목차 편집</td>
+        <td><span class="p1">P1</span></td>
+        <td>섹션 이름 수정, 순서 변경, 추가·삭제. 목차 확정 후 AI 분석 진행</td>
+      </tr>
+      <tr>
+        <td>섹션별 슬라이드 수 설정</td>
+        <td><span class="p2">P2</span></td>
+        <td>각 섹션에 몇 장의 슬라이드를 배치할지 목표 수 지정 가능 (기본: AI 자동 판단)</td>
+      </tr>
+    </table>
+
+    <h3>F3. AI 사업여건 분석 & 자동 배치</h3>
     <table class="priority-table">
       <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
       <tr>
         <td>현장 특성 분류</td>
         <td><span class="p1">P1</span></td>
-        <td>입력 정보 기반으로 공종(토목/건축/복합), 규모(대형/중형/소형), 특수 요소(환경·안전·BIM 강조 여부 등) 판단</td>
+        <td>입력 정보 기반으로 공종(토목/건축/복합), 규모, 특수 요소(환경·안전·BIM 강조 여부 등) 판단</td>
+      </tr>
+      <tr>
+        <td>섹션별 레이아웃 + 아이템 자동 배치</td>
+        <td><span class="p1">P1</span></td>
+        <td>각 섹션·슬라이드마다 (1) 격자 레이아웃 템플릿 선택 (2) 각 셀에 적합한 아이템 배치를 AI가 결정</td>
       </tr>
       <tr>
         <td>섹션별 검색 키워드 생성</td>
         <td><span class="p1">P1</span></td>
-        <td>각 목차 섹션에 대해 이 현장에 맞는 검색 키워드 3~5개 자동 생성</td>
+        <td>각 목차 섹션에 대해 현장 여건에 맞는 검색 키워드 생성 → proposal-db-mvp 검색에 사용</td>
       </tr>
       <tr>
         <td>분석 결과 요약 표시</td>
@@ -490,53 +529,53 @@
       </tr>
     </table>
 
-    <h3>F3. 목차 및 아이템 배치</h3>
+    <h3>F4. 슬라이드 편집</h3>
     <table class="priority-table">
       <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
       <tr>
-        <td>표준 목차 템플릿</td>
+        <td>레이아웃 템플릿 변경</td>
         <td><span class="p1">P1</span></td>
-        <td>건설CM 제안서 표준 목차(기존 17개 섹션 기준)를 기본 제공. 사용자가 섹션 추가·삭제·순서 변경 가능</td>
+        <td>슬라이드 클릭 → 레이아웃 선택 패널에서 다른 격자 템플릿으로 교체 (셀 수 변경 시 아이템 재배치)</td>
       </tr>
       <tr>
-        <td>자동 아이템 배치</td>
+        <td>셀 내 아이템 교체</td>
         <td><span class="p1">P1</span></td>
-        <td>proposal-db-mvp DB에서 섹션별로 가장 적합한 아이템 1개 자동 배치. 추천 후보 3개 함께 제시</td>
+        <td>셀 클릭 → 후보 아이템 3~5개 표시 → 선택하여 교체. 키워드 검색으로 추가 탐색 가능</td>
       </tr>
       <tr>
-        <td>아이템 수동 교체</td>
+        <td>셀 아이템 제거</td>
         <td><span class="p1">P1</span></td>
-        <td>배치된 아이템을 클릭하면 동일 섹션의 후보 아이템 패널 표시 → 선택하여 교체</td>
+        <td>셀 내 아이템을 비워 빈 셀로 만들기 (빈 셀은 PPTX에서 공백 또는 자리표시자로 처리)</td>
       </tr>
       <tr>
-        <td>아이템 추가/삭제</td>
+        <td>슬라이드 추가 / 삭제</td>
         <td><span class="p1">P1</span></td>
-        <td>섹션 내 아이템 추가(DB 검색 모달) 또는 삭제</td>
+        <td>섹션 내 슬라이드 추가(레이아웃 선택 후 아이템 직접 채우기) 또는 삭제</td>
       </tr>
       <tr>
         <td>슬라이드 순서 변경</td>
         <td><span class="p2">P2</span></td>
-        <td>드래그 앤 드롭으로 슬라이드 순서 조정</td>
+        <td>드래그 앤 드롭으로 섹션 내 또는 섹션 간 슬라이드 순서 조정</td>
       </tr>
       <tr>
         <td>DB 직접 검색</td>
         <td><span class="p2">P2</span></td>
-        <td>키워드로 proposal-db-mvp를 직접 검색해 원하는 아이템 추가</td>
+        <td>키워드로 proposal-db-mvp를 직접 검색 → 원하는 아이템을 특정 셀에 배치</td>
       </tr>
     </table>
 
-    <h3>F4. 웹 미리보기</h3>
+    <h3>F5. 미리보기</h3>
     <table class="priority-table">
       <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
       <tr>
-        <td>섬네일 그리드</td>
+        <td>슬라이드 썸네일 목록</td>
         <td><span class="p1">P1</span></td>
-        <td>전체 슬라이드를 썸네일 격자로 표시. 섹션 구분선 포함</td>
+        <td>전체 슬라이드를 격자 레이아웃이 반영된 썸네일로 표시. 섹션 구분선 포함</td>
       </tr>
       <tr>
         <td>슬라이드 상세 보기</td>
         <td><span class="p1">P1</span></td>
-        <td>클릭 시 원본 이미지 확대 표시</td>
+        <td>클릭 시 실제 레이아웃대로 아이템 이미지가 배치된 확대 뷰 표시</td>
       </tr>
       <tr>
         <td>섹션 접기/펼치기</td>
@@ -545,18 +584,23 @@
       </tr>
     </table>
 
-    <h3>F5. PPTX 내보내기</h3>
+    <h3>F6. PPTX 내보내기</h3>
     <table class="priority-table">
       <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
       <tr>
-        <td>PPTX 생성 및 다운로드</td>
+        <td>슬라이드 규격 선택</td>
         <td><span class="p1">P1</span></td>
-        <td>현재 배치된 아이템 이미지를 슬라이드별로 삽입하여 PPTX 생성</td>
+        <td>A4 세로 / A3 가로 / 사용자 정의(mm 직접 입력) 선택</td>
+      </tr>
+      <tr>
+        <td>격자 레이아웃 PPTX 생성</td>
+        <td><span class="p1">P1</span></td>
+        <td>각 슬라이드의 격자 레이아웃대로 아이템 이미지를 정확한 위치·크기로 삽입하여 PPTX 생성</td>
       </tr>
       <tr>
         <td>섹션 구분 슬라이드</td>
         <td><span class="p2">P2</span></td>
-        <td>목차 섹션 시작 시 구분용 타이틀 슬라이드 자동 삽입</td>
+        <td>목차 섹션 시작 시 섹션명이 포함된 구분 슬라이드 자동 삽입</td>
       </tr>
       <tr>
         <td>표지 슬라이드</td>
@@ -565,7 +609,7 @@
       </tr>
     </table>
 
-    <h3>F6. 제안서 관리</h3>
+    <h3>F7. 제안서 관리</h3>
     <table class="priority-table">
       <tr><th>항목</th><th>우선순위</th><th>설명</th></tr>
       <tr>
@@ -586,9 +630,137 @@
     </table>
   </div>
 
-  <!-- 6. 화면 구성 -->
-  <div class="section" id="screens">
+  <!-- 6. 레이아웃 시스템 -->
+  <div class="section" id="layout">
     <span class="section-number">06</span>
+    <h2>슬라이드 레이아웃 시스템</h2>
+
+    <div class="callout blue">
+      <strong>핵심 개념:</strong> 제안서 1슬라이드 = 1페이지. 이 페이지를 <strong>최대 12셀의 격자</strong>로 분할하고,
+      각 셀에 proposal-db-mvp의 아이템 이미지 1개를 배치합니다.
+      AI가 섹션 특성에 맞는 분할 방식을 결정하고, 사람이 최종 검토·수정합니다.
+    </div>
+
+    <h3>레이아웃 템플릿 (예시)</h3>
+    <div class="layout-gallery">
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr; grid-template-rows:1fr;">
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">단일 (1×1)</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr;">
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">좌우 2분할</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr; grid-template-rows:1fr 1fr;">
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">상하 2분할</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;">
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">2×2 (4셀)</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr;">
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">3×2 (6셀)</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">2×3 (6셀)</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+          <div class="layout-cell"></div>
+        </div>
+        <div class="label">3×3 (9셀)</div>
+      </div>
+      <div class="layout-card">
+        <div class="layout-preview" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr 1fr;">
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+          <div class="layout-cell"></div><div class="layout-cell"></div><div class="layout-cell"></div>
+        </div>
+        <div class="label">3×4 (12셀)</div>
+      </div>
+    </div>
+
+    <h3>레이아웃 선택 기준 (AI 판단 로직)</h3>
+    <table>
+      <tr><th>섹션 특성</th><th>권장 레이아웃</th><th>이유</th></tr>
+      <tr>
+        <td>대표 방법론 / 핵심 전략 강조</td>
+        <td>단일 (1×1) 또는 좌우 2분할</td>
+        <td>내용이 명확하게 보여야 할 때</td>
+      </tr>
+      <tr>
+        <td>조직도 / 공정표 등 단일 도표</td>
+        <td>단일 (1×1)</td>
+        <td>도표 하나가 슬라이드 전체를 차지</td>
+      </tr>
+      <tr>
+        <td>여러 관리 항목 나열 (품질·안전·환경)</td>
+        <td>2×2 ~ 3×2</td>
+        <td>여러 항목을 한 눈에 비교</td>
+      </tr>
+      <tr>
+        <td>세부 공법 / 상세 절차 설명</td>
+        <td>3×2 ~ 2×3</td>
+        <td>단계별 흐름을 순서대로 배치</td>
+      </tr>
+      <tr>
+        <td>다수 세부 항목 (체크리스트형)</td>
+        <td>3×3 ~ 3×4</td>
+        <td>많은 항목을 컴팩트하게 배치</td>
+      </tr>
+    </table>
+
+    <h3>PPTX 변환 규칙</h3>
+    <ul>
+      <li>각 셀의 크기와 위치는 슬라이드 전체 크기 대비 <strong>정확한 비율(mm 단위)</strong>로 계산하여 PPTX에 삽입</li>
+      <li>셀 간 여백(gutter)은 기본 2mm, 슬라이드 외곽 여백은 기본 5mm (MVP에서 고정, 추후 조정 가능)</li>
+      <li>빈 셀은 연한 회색 배경으로 처리하여 후속 AI 작업 시 자리 파악 가능</li>
+      <li>슬라이드 노트에 섹션명, 각 셀의 아이템 ID 기록</li>
+    </ul>
+  </div>
+
+  <!-- 7. 화면 구성 -->
+  <div class="section" id="screens">
+    <span class="section-number">07</span>
     <h2>화면 구성</h2>
 
     <div class="screen-grid">
@@ -603,64 +775,64 @@
       <div class="screen-card">
         <h4>📋 현장 정보 입력</h4>
         <ul>
-          <li>RFP 파일 업로드 영역 (상단)</li>
+          <li>RFP 파일 업로드 영역 (상단, 드래그앤드롭)</li>
           <li>자동 추출된 정보 확인·수정 폼</li>
           <li>공사 규모, 공종, 특이사항 등 구조화 필드</li>
-          <li>"분석 시작" 버튼</li>
+          <li>"다음: 목차 확인" 버튼</li>
         </ul>
       </div>
       <div class="screen-card">
-        <h4>🔍 AI 분석 결과</h4>
+        <h4>📑 목차 확인 & 편집</h4>
         <ul>
-          <li>현장 특성 요약 카드 (AI 판단 결과)</li>
-          <li>섹션별 추천 키워드 목록</li>
-          <li>사용자가 키워드 직접 수정 가능</li>
-          <li>"초안 생성" 버튼</li>
+          <li>RFP에서 추출된 목차 자동 표시</li>
+          <li>섹션 추가·삭제·이름 수정·순서 변경</li>
+          <li>섹션별 목표 슬라이드 수 설정 (선택)</li>
+          <li>"초안 생성 시작" 버튼</li>
         </ul>
       </div>
       <div class="screen-card">
-        <h4>✏️ 제안서 편집 (핵심)</h4>
+        <h4>✏️ 슬라이드 편집 (핵심 화면)</h4>
         <ul>
-          <li>좌: 목차 패널 (섹션 목록)</li>
-          <li>우: 슬라이드 썸네일 그리드</li>
-          <li>클릭 → 교체 패널 슬라이드인</li>
-          <li>드래그로 순서 변경</li>
+          <li>좌: 목차 패널 (섹션 목록 + 슬라이드 수)</li>
+          <li>중앙: 슬라이드 격자 레이아웃 미리보기</li>
+          <li>우: 선택한 셀의 후보 아이템 패널</li>
+          <li>상단: 레이아웃 템플릿 교체 버튼</li>
         </ul>
       </div>
       <div class="screen-card">
-        <h4>🔄 아이템 교체 패널</h4>
+        <h4>🔄 아이템 선택 패널</h4>
         <ul>
-          <li>현재 슬라이드 확대 표시</li>
-          <li>후보 아이템 3개 썸네일</li>
+          <li>현재 셀 확대 표시</li>
+          <li>후보 아이템 3~5개 썸네일</li>
           <li>키워드 검색으로 추가 탐색</li>
-          <li>"선택" 클릭 시 즉시 교체</li>
+          <li>"선택" 클릭 시 즉시 셀에 배치</li>
         </ul>
       </div>
       <div class="screen-card">
         <h4>📥 내보내기</h4>
         <ul>
-          <li>최종 슬라이드 수 요약</li>
-          <li>PPTX 생성 중 프로그레스</li>
-          <li>다운로드 버튼</li>
-          <li>재편집 링크</li>
+          <li>슬라이드 규격 선택 (A4 세로 / A3 가로 / 직접 입력)</li>
+          <li>총 슬라이드 수 확인</li>
+          <li>PPTX 생성 프로그레스</li>
+          <li>다운로드 버튼 / 재편집 링크</li>
         </ul>
       </div>
     </div>
 
     <div class="callout green">
-      <strong>URL 구조 (안):</strong>
-      <code>/</code> → 목록 &nbsp;|&nbsp;
-      <code>/proposals/new</code> → 새 제안서 &nbsp;|&nbsp;
-      <code>/proposals/[id]/info</code> → 현장 정보 &nbsp;|&nbsp;
-      <code>/proposals/[id]/analysis</code> → 분석 &nbsp;|&nbsp;
-      <code>/proposals/[id]/edit</code> → 편집 &nbsp;|&nbsp;
-      <code>/proposals/[id]/export</code> → 내보내기
+      <strong>URL 구조:</strong>
+      <code>/</code> 목록 &nbsp;|&nbsp;
+      <code>/proposals/new</code> 새 제안서 &nbsp;|&nbsp;
+      <code>/proposals/[id]/info</code> 현장 정보 &nbsp;|&nbsp;
+      <code>/proposals/[id]/toc</code> 목차 &nbsp;|&nbsp;
+      <code>/proposals/[id]/edit</code> 편집 &nbsp;|&nbsp;
+      <code>/proposals/[id]/export</code> 내보내기
     </div>
   </div>
 
-  <!-- 7. 데이터 모델 -->
+  <!-- 8. 데이터 모델 -->
   <div class="section" id="data">
-    <span class="section-number">07</span>
+    <span class="section-number">08</span>
     <h2>데이터 모델</h2>
 
     <div class="callout blue">
@@ -681,33 +853,46 @@
       <tr><td>duration_months</td><td>integer</td><td>공사 기간 (개월)</td></tr>
       <tr><td>special_conditions</td><td>text</td><td>특이사항 (자유 텍스트)</td></tr>
       <tr><td>rfp_file_url</td><td>text</td><td>업로드된 RFP 파일 Storage URL</td></tr>
-      <tr><td>ai_analysis</td><td>jsonb</td><td>AI 분석 결과 (특성 분류, 섹션별 키워드)</td></tr>
+      <tr><td>slide_size</td><td>jsonb</td><td>슬라이드 규격 {preset: "A4P"|"A3L"|"custom", width_mm, height_mm}</td></tr>
+      <tr><td>ai_analysis</td><td>jsonb</td><td>Gemini 분석 결과 (특성 분류, 섹션별 키워드)</td></tr>
       <tr><td>status</td><td>text</td><td>draft / analyzing / editing / exported</td></tr>
       <tr><td>created_at</td><td>timestamptz</td><td></td></tr>
       <tr><td>updated_at</td><td>timestamptz</td><td></td></tr>
     </table>
 
-    <h3>proposal_sections (목차 섹션)</h3>
+    <h3>proposal_sections (발주처 목차 섹션)</h3>
     <table>
       <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
       <tr><td>id</td><td>uuid</td><td>PK</td></tr>
       <tr><td>proposal_id</td><td>uuid</td><td>FK → proposals</td></tr>
-      <tr><td>section_key</td><td>text</td><td>섹션 식별자 (e.g. "intro", "method_01")</td></tr>
-      <tr><td>title</td><td>text</td><td>섹션 제목</td></tr>
+      <tr><td>title</td><td>text</td><td>섹션 제목 (발주처 목차 그대로)</td></tr>
       <tr><td>order_index</td><td>integer</td><td>표시 순서</td></tr>
-      <tr><td>search_keywords</td><td>text[]</td><td>이 섹션에 사용된 검색 키워드</td></tr>
+      <tr><td>target_slides</td><td>integer</td><td>목표 슬라이드 수 (null이면 AI 자동)</td></tr>
+      <tr><td>search_keywords</td><td>text[]</td><td>AI가 생성한 검색 키워드</td></tr>
     </table>
 
-    <h3>proposal_slides (배치된 슬라이드)</h3>
+    <h3>proposal_slides (슬라이드 — 레이아웃 포함)</h3>
     <table>
       <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
       <tr><td>id</td><td>uuid</td><td>PK</td></tr>
       <tr><td>proposal_id</td><td>uuid</td><td>FK → proposals</td></tr>
       <tr><td>section_id</td><td>uuid</td><td>FK → proposal_sections</td></tr>
-      <tr><td>db_item_id</td><td>text</td><td>proposal-db-mvp의 아이템 ID (참조용)</td></tr>
-      <tr><td>image_url</td><td>text</td><td>아이템 이미지 URL (복사 또는 원본 참조)</td></tr>
       <tr><td>order_index</td><td>integer</td><td>섹션 내 순서</td></tr>
-      <tr><td>note</td><td>text</td><td>편집자 메모 (선택)</td></tr>
+      <tr><td>layout_key</td><td>text</td><td>레이아웃 템플릿 식별자 (예: "grid_2x2", "grid_3x4", "single")</td></tr>
+      <tr><td>layout_cols</td><td>integer</td><td>격자 열 수</td></tr>
+      <tr><td>layout_rows</td><td>integer</td><td>격자 행 수</td></tr>
+    </table>
+
+    <h3>slide_cells (슬라이드 내 각 셀)</h3>
+    <table>
+      <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+      <tr><td>id</td><td>uuid</td><td>PK</td></tr>
+      <tr><td>slide_id</td><td>uuid</td><td>FK → proposal_slides</td></tr>
+      <tr><td>cell_index</td><td>integer</td><td>셀 번호 (0부터, 행 우선 순서)</td></tr>
+      <tr><td>col_span</td><td>integer</td><td>열 병합 수 (기본 1)</td></tr>
+      <tr><td>row_span</td><td>integer</td><td>행 병합 수 (기본 1)</td></tr>
+      <tr><td>db_item_id</td><td>text</td><td>proposal-db-mvp 아이템 ID (null이면 빈 셀)</td></tr>
+      <tr><td>image_url</td><td>text</td><td>아이템 이미지 URL</td></tr>
     </table>
 
     <h3>site_documents (업로드 문서)</h3>
@@ -717,14 +902,14 @@
       <tr><td>proposal_id</td><td>uuid</td><td>FK → proposals</td></tr>
       <tr><td>file_url</td><td>text</td><td>Storage URL</td></tr>
       <tr><td>file_type</td><td>text</td><td>rfp / reference_image / other</td></tr>
-      <tr><td>extracted_text</td><td>text</td><td>GPT로 추출한 텍스트 (RFP 전용)</td></tr>
+      <tr><td>extracted_text</td><td>text</td><td>Gemini로 추출한 텍스트 (RFP 전용)</td></tr>
       <tr><td>created_at</td><td>timestamptz</td><td></td></tr>
     </table>
   </div>
 
-  <!-- 8. 기술 스택 -->
+  <!-- 9. 기술 스택 -->
   <div class="section" id="tech">
-    <span class="section-number">08</span>
+    <span class="section-number">09</span>
     <h2>기술 스택 & 아키텍처</h2>
 
     <table>
@@ -736,7 +921,7 @@
       </tr>
       <tr>
         <td>백엔드 API</td>
-        <td>Next.js Route Handlers (API Routes)</td>
+        <td>Next.js Route Handlers</td>
         <td>AI 분석, PPTX 생성, 파일 처리</td>
       </tr>
       <tr>
@@ -750,9 +935,9 @@
         <td>RFP 파일, 참고 이미지</td>
       </tr>
       <tr>
-        <td>AI - 문서 분석</td>
-        <td>OpenAI GPT-4o</td>
-        <td>RFP 파싱, 사업여건 분석, 키워드 생성</td>
+        <td>AI — 문서 분석 / 배치 결정</td>
+        <td><strong>Google Gemini API</strong> (gemini-2.0-flash 또는 gemini-1.5-pro)</td>
+        <td>RFP 파싱·목차 추출, 사업여건 분석, 레이아웃·아이템 배치 결정</td>
       </tr>
       <tr>
         <td>아이템 DB 연동</td>
@@ -762,7 +947,7 @@
       <tr>
         <td>PPTX 생성</td>
         <td>pptxgenjs (Node.js)</td>
-        <td>서버사이드 PPTX 파일 생성</td>
+        <td>서버사이드 격자 레이아웃 PPTX 생성</td>
       </tr>
       <tr>
         <td>드래그 앤 드롭</td>
@@ -776,32 +961,32 @@
       <pre style="font-size:13px; line-height:1.8; white-space:pre-wrap;">
 사용자 브라우저
   │
-  ├─ [파일 업로드] → Supabase Storage → RFP 텍스트 추출 (GPT-4o)
-  │                                          ↓
-  ├─ [현장 정보 저장] → Supabase DB (proposals)
+  ├─ [파일 업로드] → Supabase Storage
+  │                      → API /api/parse-rfp
+  │                          └─ Gemini: 텍스트 추출 + 목차 파싱 → 폼 자동 채우기
   │
-  ├─ [분석 요청] → API Route /api/analyze
-  │                  ├─ GPT-4o: 현장 특성 분류 + 섹션별 키워드 생성
-  │                  └─ 결과 → ai_analysis (jsonb) 저장
+  ├─ [현장 정보 + 목차 저장] → Supabase DB (proposals, proposal_sections)
   │
-  ├─ [초안 생성 요청] → API Route /api/generate
+  ├─ [초안 생성 요청] → API /api/generate
+  │                       ├─ Gemini: 사업여건 분석 → 섹션별 키워드 생성
   │                       ├─ 섹션별 키워드로 proposal-db-mvp 검색
-  │                       ├─ 아이템 선정 및 proposal_slides 저장
-  │                       └─ 편집 화면으로 리다이렉트
+  │                       ├─ Gemini: 각 섹션·슬라이드의 레이아웃 선택 + 셀별 아이템 결정
+  │                       └─ proposal_slides + slide_cells 저장
   │
-  ├─ [편집] → Supabase Realtime / Optimistic Update
+  ├─ [편집] → API (PATCH) → slide_cells 업데이트 (Optimistic UI)
   │
-  └─ [PPTX 내보내기] → API Route /api/export
-                          ├─ proposal_slides 조회
-                          ├─ 이미지 다운로드 + pptxgenjs 조립
+  └─ [PPTX 내보내기] → API /api/export
+                          ├─ proposal_slides + slide_cells 조회
+                          ├─ 슬라이드 규격(mm) 계산
+                          ├─ 각 셀 위치·크기(mm) 계산 → pptxgenjs 이미지 삽입
                           └─ .pptx 파일 스트림 반환
       </pre>
     </div>
   </div>
 
-  <!-- 9. PPTX 출력 규격 -->
+  <!-- 10. PPTX 출력 규격 -->
   <div class="section" id="output">
-    <span class="section-number">09</span>
+    <span class="section-number">10</span>
     <h2>PPTX 출력 규격</h2>
 
     <div class="callout orange">
@@ -809,27 +994,51 @@
       PPTX → PDF 내보내기 → Illustrator에서 열어 최종 디자인 편집하는 워크플로우를 지원합니다.
     </div>
 
+    <h3>슬라이드 규격 옵션</h3>
+    <table>
+      <tr><th>옵션</th><th>크기</th><th>주요 사용 시나리오</th></tr>
+      <tr>
+        <td><strong>A4 세로 (기본)</strong></td>
+        <td>210mm × 297mm</td>
+        <td>인쇄 제출용, 표준 제안서</td>
+      </tr>
+      <tr>
+        <td><strong>A3 가로</strong></td>
+        <td>420mm × 297mm</td>
+        <td>넓은 공정표·조직도 등 가로 배치가 필요한 섹션</td>
+      </tr>
+      <tr>
+        <td><strong>사용자 정의</strong></td>
+        <td>너비·높이 mm 직접 입력</td>
+        <td>발주처 특정 규격 요구 시</td>
+      </tr>
+    </table>
+    <div class="callout blue">
+      슬라이드 규격은 제안서 전체에 하나를 적용합니다. 내보내기 단계에서 변경하면 모든 슬라이드에 동일하게 적용됩니다.
+    </div>
+
+    <h3>레이아웃 → PPTX 변환 규칙</h3>
     <table>
       <tr><th>항목</th><th>규격</th><th>이유</th></tr>
       <tr>
-        <td>슬라이드 사이즈</td>
-        <td>297mm × 210mm (A4 가로)</td>
-        <td>인쇄·PDF 호환, AI에서 정확한 치수 편집</td>
+        <td>외곽 여백</td>
+        <td>상하좌우 5mm (MVP 고정)</td>
+        <td>AI 편집 시 여백 확보</td>
       </tr>
       <tr>
-        <td>아이템 이미지 배치</td>
-        <td>슬라이드 전체 채움 (Full-bleed)</td>
-        <td>원본 이미지를 최대한 보존</td>
+        <td>셀 간 여백 (gutter)</td>
+        <td>2mm (MVP 고정)</td>
+        <td>셀 구분 명확화</td>
       </tr>
       <tr>
-        <td>텍스트 요소</td>
-        <td>아웃라인 변환 없이 텍스트 박스로 삽입</td>
-        <td>AI에서 텍스트 편집 가능</td>
+        <td>셀 내 이미지</td>
+        <td>셀 영역 100% 채움 (원본 비율 유지, 중앙 크롭)</td>
+        <td>AI에서 잘라내기 재조정 가능</td>
       </tr>
       <tr>
-        <td>섹션 구분 슬라이드</td>
-        <td>섹션명 + 배경색 텍스트 슬라이드</td>
-        <td>목차 구조 파악, AI 편집 시 구분점</td>
+        <td>빈 셀</td>
+        <td>연한 회색 사각형 (#E5E7EB) + 셀 번호 텍스트</td>
+        <td>AI 편집 시 위치 파악</td>
       </tr>
       <tr>
         <td>이미지 해상도</td>
@@ -837,16 +1046,21 @@
         <td>화질 손실 없이 AI 편집</td>
       </tr>
       <tr>
-        <td>메타데이터</td>
-        <td>슬라이드 노트에 아이템 ID, 섹션명 기록</td>
+        <td>슬라이드 노트</td>
+        <td>섹션명 | 레이아웃 | 셀0: 아이템ID, 셀1: 아이템ID …</td>
         <td>AI 편집 후 추적 가능</td>
+      </tr>
+      <tr>
+        <td>텍스트 요소</td>
+        <td>아웃라인 변환 없이 텍스트 박스로 삽입</td>
+        <td>AI에서 텍스트 편집 가능</td>
       </tr>
     </table>
   </div>
 
-  <!-- 10. 범위 -->
+  <!-- 11. 범위 -->
   <div class="section" id="scope">
-    <span class="section-number">10</span>
+    <span class="section-number">11</span>
     <h2>MVP 범위 (In / Out)</h2>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
@@ -854,13 +1068,14 @@
         <h3 style="color:#16a34a;">✅ MVP에 포함</h3>
         <ul>
           <li>현장 정보 텍스트 입력 폼</li>
-          <li>RFP PDF/Word 업로드 + 자동 파싱</li>
-          <li>GPT-4o 기반 사업여건 분석</li>
+          <li>RFP PDF/Word 업로드 + Gemini 자동 파싱</li>
+          <li>발주처 목차 입력·편집</li>
+          <li>Gemini 기반 사업여건 분석</li>
+          <li>격자 레이아웃 자동 선택 + 아이템 배치</li>
           <li>proposal-db-mvp 연동 아이템 검색</li>
-          <li>목차별 아이템 자동 배치</li>
-          <li>웹 미리보기 (썸네일 그리드)</li>
-          <li>아이템 교체 / 추가 / 삭제</li>
-          <li>PPTX 내보내기 (A4 가로)</li>
+          <li>슬라이드 편집 (레이아웃 변경, 셀 교체)</li>
+          <li>슬라이드 규격 선택 (A4 세로 / A3 가로 / 직접 입력)</li>
+          <li>격자 레이아웃 기반 PPTX 내보내기</li>
           <li>제안서 목록 / 이어서 작업</li>
         </ul>
       </div>
@@ -868,22 +1083,23 @@
         <h3 style="color:#dc2626;">❌ MVP 제외 (추후)</h3>
         <ul>
           <li>로그인 / 사용자 권한 관리</li>
+          <li>셀 크기 자유 조정 (병합/분할 이상의 커스텀)</li>
           <li>텍스트 직접 편집 (슬라이드 내)</li>
           <li>실시간 공동 편집</li>
           <li>아이템 DB 관리 (→ proposal-db-mvp에서)</li>
           <li>PDF 직접 출력</li>
           <li>버전 이력 / 롤백</li>
           <li>제안서 공유 링크</li>
-          <li>OCR 기반 이미지 내 텍스트 추출</li>
+          <li>HWP 파일 지원</li>
           <li>모바일 최적화</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <!-- 11. 마일스톤 -->
+  <!-- 12. 마일스톤 -->
   <div class="section" id="milestones">
-    <span class="section-number">11</span>
+    <span class="section-number">12</span>
     <h2>개발 마일스톤</h2>
 
     <div class="milestone-row">
@@ -893,9 +1109,9 @@
         <p>예상 소요: 1~2일</p>
         <ul>
           <li>Next.js 프로젝트 초기화 (TypeScript, Tailwind, App Router)</li>
-          <li>Supabase 프로젝트 생성 및 스키마 마이그레이션</li>
-          <li>proposal-db-mvp API 읽기 연동 확인</li>
-          <li>Storage 버킷 설정</li>
+          <li>Supabase 스키마 마이그레이션 (proposals, proposal_sections, proposal_slides, slide_cells)</li>
+          <li>proposal-db-mvp 읽기 연동 확인</li>
+          <li>Gemini API 연결 확인</li>
         </ul>
       </div>
     </div>
@@ -903,13 +1119,13 @@
     <div class="milestone-row">
       <div class="milestone-number">2</div>
       <div class="milestone-content">
-        <h4>M2. 현장 정보 입력 + RFP 파싱</h4>
+        <h4>M2. 현장 정보 입력 + RFP 파싱 + 목차</h4>
         <p>예상 소요: 2~3일</p>
         <ul>
-          <li>현장 정보 폼 UI 구현</li>
-          <li>RFP 파일 업로드 (PDF/Word → 텍스트 추출)</li>
-          <li>GPT-4o로 핵심 정보 추출 → 폼 자동 채우기</li>
-          <li>임시 저장 기능</li>
+          <li>현장 정보 폼 UI</li>
+          <li>RFP 파일 업로드 → Gemini로 텍스트 + 목차 자동 추출</li>
+          <li>목차 편집 UI (추가·삭제·순서 변경)</li>
+          <li>임시 저장</li>
         </ul>
       </div>
     </div>
@@ -917,13 +1133,13 @@
     <div class="milestone-row">
       <div class="milestone-number">3</div>
       <div class="milestone-content">
-        <h4>M3. AI 분석 + 초안 생성</h4>
-        <p>예상 소요: 3~4일</p>
+        <h4>M3. AI 분석 + 격자 레이아웃 자동 배치</h4>
+        <p>예상 소요: 3~5일 (핵심 난이도)</p>
         <ul>
-          <li>사업여건 분석 API (GPT-4o 프롬프트 설계)</li>
-          <li>섹션별 키워드 생성 로직</li>
-          <li>proposal-db-mvp 키워드 검색 → 아이템 자동 배치</li>
-          <li>분석 결과 확인 UI</li>
+          <li>Gemini 프롬프트 설계: 현장 여건 분석 → 섹션별 키워드 생성</li>
+          <li>proposal-db-mvp 키워드 검색</li>
+          <li>Gemini 프롬프트 설계: 섹션·슬라이드별 레이아웃 템플릿 선택 + 셀별 아이템 결정</li>
+          <li>proposal_slides + slide_cells 저장</li>
         </ul>
       </div>
     </div>
@@ -931,13 +1147,14 @@
     <div class="milestone-row">
       <div class="milestone-number">4</div>
       <div class="milestone-content">
-        <h4>M4. 편집 UI</h4>
+        <h4>M4. 슬라이드 편집 UI</h4>
         <p>예상 소요: 3~4일</p>
         <ul>
-          <li>슬라이드 썸네일 그리드</li>
-          <li>아이템 교체 패널 (후보 3개 표시)</li>
+          <li>격자 레이아웃 미리보기 (CSS Grid로 슬라이드 시각화)</li>
+          <li>레이아웃 템플릿 교체 패널</li>
+          <li>셀 클릭 → 후보 아이템 교체 패널</li>
           <li>키워드 검색 → DB 직접 검색 모달</li>
-          <li>드래그 앤 드롭 순서 변경 (dnd-kit)</li>
+          <li>드래그앤드롭 슬라이드 순서 변경 (dnd-kit)</li>
         </ul>
       </div>
     </div>
@@ -948,7 +1165,8 @@
         <h4>M5. PPTX 내보내기 + 마무리</h4>
         <p>예상 소요: 2~3일</p>
         <ul>
-          <li>pptxgenjs로 A4 가로 PPTX 생성</li>
+          <li>슬라이드 규격 선택 UI (A4 세로 / A3 가로 / 직접 입력)</li>
+          <li>pptxgenjs로 격자 레이아웃 mm 계산 + 이미지 삽입</li>
           <li>섹션 구분 슬라이드 + 표지 슬라이드</li>
           <li>슬라이드 노트에 메타데이터 삽입</li>
           <li>전체 플로우 QA + 비개발자 사용 테스트</li>
@@ -957,20 +1175,20 @@
     </div>
 
     <div class="callout green">
-      <strong>총 예상 기간:</strong> 약 2~3주 (기능 범위 및 개발 리소스에 따라 조정)
+      <strong>총 예상 기간:</strong> 약 2~3주 (M3 AI 프롬프트 품질에 따라 변동)
     </div>
   </div>
 
-  <!-- 12. 미결 사항 -->
+  <!-- 13. 미결 사항 -->
   <div class="section" id="openq">
-    <span class="section-number">12</span>
+    <span class="section-number">13</span>
     <h2>미결 사항</h2>
 
     <div class="open-q">
-      <h4>Q1. 표준 목차 구조 확정</h4>
+      <h4>Q1. 레이아웃 템플릿 목록 확정</h4>
       <ul>
-        <li>건설CM 제안서의 표준 섹션 수·명칭을 팀 실무 기준으로 확정 필요</li>
-        <li>확정된 목차는 proposal-db-mvp의 taxonomy와 동일하게 맞춰야 아이템 검색 정확도 향상</li>
+        <li>실무에서 자주 쓰는 분할 패턴 확인 필요 (단순 균등 격자 외 비대칭 레이아웃 필요 여부)</li>
+        <li>셀 병합(colspan/rowspan)을 MVP에 포함할지 여부</li>
       </ul>
     </div>
 
@@ -983,25 +1201,25 @@
     </div>
 
     <div class="open-q">
-      <h4>Q3. 섹션별 아이템 수</h4>
+      <h4>Q3. 섹션별 슬라이드 수 기준</h4>
       <ul>
-        <li>한 섹션에 아이템을 몇 장까지 배치할 수 있는지 (기본값, 최대값)</li>
-        <li>섹션별로 차이가 있는지 (예: "조직 구성"은 1장, "공정관리"는 다수)</li>
+        <li>AI가 섹션별 슬라이드 수를 자동 결정할 때 기준이 될 휴리스틱 필요</li>
+        <li>실무에서 섹션별로 통상 몇 장을 배정하는지 경험치 공유 필요</li>
       </ul>
     </div>
 
     <div class="open-q">
       <h4>Q4. RFP 파일 형식</h4>
       <ul>
-        <li>주로 사용되는 공고문 형식 (PDF, HWP, Word)</li>
-        <li>HWP 지원 여부 — 별도 변환 도구 필요</li>
+        <li>주로 사용되는 공고문 형식 (PDF, HWP, Word) — HWP는 MVP 제외, 사전 PDF 변환 필요</li>
+        <li>Gemini는 PDF를 직접 처리 가능 (File API 활용)</li>
       </ul>
     </div>
 
     <div class="open-q">
-      <h4>Q5. PPTX → AI 워크플로우</h4>
+      <h4>Q5. PPTX → Illustrator 워크플로우</h4>
       <ul>
-        <li>PPTX를 PDF로 내보내어 AI에서 여는 방식인지, 직접 PPTX를 AI로 여는 방식인지</li>
+        <li>PPTX를 PDF로 내보내어 AI에서 여는 방식인지, PPTX를 직접 AI로 여는 방식인지</li>
         <li>AI에서 편집 후 다시 시스템으로 가져오는 흐름이 필요한지</li>
       </ul>
     </div>
@@ -1011,7 +1229,7 @@
 
 <footer>
   <div class="container">
-    제안서 초안 자동생성 시스템 MVP — PRD v0.1 &nbsp;|&nbsp; 2026-06-24<br>
+    제안서 초안 자동생성 시스템 MVP — PRD v0.2 &nbsp;|&nbsp; 2026-06-24<br>
     <span style="opacity:0.6;">미래사업팀 내부 검토용 문서</span>
   </div>
 </footer>
