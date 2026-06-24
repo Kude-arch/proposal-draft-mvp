@@ -1334,11 +1334,13 @@
       </ul>
     </div>
 
-    <div class="open-q">
-      <h4>Q5. PPTX → Illustrator 워크플로우</h4>
+    <div class="resolved-q">
+      <h4>✅ Q5. PPTX → Illustrator 워크플로우 — 결정됨</h4>
       <ul>
-        <li>PPTX를 PDF로 내보내어 AI에서 여는 방식인지, PPTX를 직접 AI로 여는 방식인지</li>
-        <li>AI에서 편집 후 다시 시스템으로 가져오는 흐름이 필요한지</li>
+        <li><strong>이상적 흐름</strong>: PPTX → PDF 내보내기 → Illustrator에서 열어 편집. 레이어 구조는 단순하지만 텍스트·벡터 편집 가능</li>
+        <li><strong>현실</strong>: PPTX를 Illustrator로 직접 넘기지 못하는 경우가 많아 담당자가 시스템 미리보기를 보면서 AI에서 직접 제작하는 방식으로 운영 중. 이 시스템의 PPTX는 <strong>레이아웃·아이템 배치 참고용 초안</strong>으로 활용</li>
+        <li><strong>역방향 흐름 (AI 편집 완료 후 DB 재등록)</strong>: Illustrator에서 완성된 슬라이드 이미지를 proposal-db-mvp에 새 아이템으로 등록하여 재활용 — 이 기능은 <strong>proposal-db-mvp 시스템에서 담당</strong> (이 MVP 범위 외)</li>
+        <li><strong>이 시스템의 역할 명확화</strong>: 완성본 제작 도구가 아닌, 아이템 배치 구성을 빠르게 결정해주는 <strong>"초안 설계 도구"</strong></li>
       </ul>
     </div>
   </div>
