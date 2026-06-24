@@ -1330,7 +1330,8 @@
         <li><strong>실제 사용 형식</strong>: PDF / HWP / Excel 세 가지</li>
         <li><strong>PDF</strong> <span class="tag green">P1 완전 지원</span> — Gemini File API로 직접 파싱. 텍스트·표·목차 추출 가능</li>
         <li><strong>Excel</strong> <span class="tag green">P1 완전 지원</span> — <code>xlsx</code> 라이브러리(Node.js)로 파싱 후 텍스트 변환 → Gemini 전달. 공정표·내역서 형태의 RFP에 대응</li>
-        <li><strong>HWP</strong> <span class="tag orange">MVP 제외 → 사전 변환 안내</span> — HWP 직접 파싱 라이브러리가 불안정하고 라이선스 제약 있음. MVP에서는 업로드 시 "HWP는 PDF로 변환 후 업로드해 주세요" 안내 메시지 표시. 추후 Hancom API 또는 HWP.js 도입 검토</li>
+        <li><strong>HWPX</strong> <span class="tag green">P2 지원</span> — HWPX는 ZIP + XML 구조(DOCX와 유사)이므로 <code>jszip</code>으로 압축 해제 후 XML 파싱으로 텍스트 추출 가능. 완벽한 렌더링은 불가능하지만 목차·본문 텍스트 추출 수준으로 충분</li>
+        <li><strong>HWP (구형 바이너리)</strong> <span class="tag orange">MVP 제외 → 사전 변환 안내</span> — 바이너리 포맷으로 파싱 라이브러리가 불안정하고 라이선스 제약 있음. 업로드 시 "HWP(구형)는 PDF 또는 HWPX로 변환 후 업로드해 주세요" 안내 표시</li>
       </ul>
     </div>
 
