@@ -10,6 +10,10 @@ interface Props {
 }
 
 const ACCEPTED_EXTS = ['.hwpx', '.hwp', '.pdf', '.xlsx', '.xls', '.pptx']
+const MAX_FILE_MB = 50
+const MAX_TOTAL_MB = 200
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024
+const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024
 
 function getFileTypeBadge(name: string): { label: string; color: string } {
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
@@ -109,7 +113,13 @@ export default function InfoPage({ params }: Props) {
     coverage_hint?: string | null
   }> | undefined)
 
-  const rfpFile = allFiles.find(f => {
+  // 크기 초과 파일 구분
+  const oversizedFiles = new Set(allFiles.filter(f => f.size > MAX_FILE_BYTES).map(f => f.name))
+  const uploadableFiles = allFiles.filter(f => !oversizedFiles.has(f.name))
+  const totalBytes = uploadableFiles.reduce((s, f) => s + f.size, 0)
+  const totalExceeded = totalBytes > MAX_TOTAL_BYTES
+
+  const rfpFile = uploadableFiles.find(f => {
     const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
     return ext === 'hwpx' || ext === 'pdf' || ext === 'xlsx' || ext === 'xls'
   })
@@ -121,12 +131,13 @@ export default function InfoPage({ params }: Props) {
   }
 
   async function handleParseRfp() {
-    if (!rfpFile) return
+    if (!rfpFile || totalExceeded) return
     setParsing(true)
     setParseError('')
     try {
       const form = new FormData()
-      for (const f of allFiles) form.append('files', f)
+      // 크기 초과 파일 제외하고 업로드
+      for (const f of uploadableFiles) form.append('files', f)
       if (drawingMemo) form.append('drawing_memo', drawingMemo)
 
       const res = await fetch('/api/parse-rfp', { method: 'POST', body: form })
@@ -292,35 +303,76 @@ export default function InfoPage({ params }: Props) {
 
             {/* 파일 목록 */}
             {allFiles.length > 0 && (
-              <div className="mt-3 space-y-1.5">
-                {allFiles.map(f => {
-                  const badge = getFileTypeBadge(f.name)
-                  const isHwp = f.name.toLowerCase().endsWith('.hwp')
-                  return (
-                    <div
-                      key={f.name}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                        isHwp ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-white'
-                      }`}
-                    >
-                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${badge.color}`}>
-                        {badge.label}
-                      </span>
-                      <span className="text-sm text-gray-700 flex-1 truncate min-w-0">{f.name}</span>
-                      <span className="text-xs text-gray-400 flex-shrink-0">{formatBytes(f.size)}</span>
-                      {isHwp && (
-                        <span className="text-xs text-orange-500 flex-shrink-0">⚠ HWPX/PDF 변환 필요</span>
-                      )}
-                      <button
-                        onClick={() => removeFile(f.name)}
-                        className="text-gray-300 hover:text-red-400 flex-shrink-0 text-sm leading-none"
-                        title="제거"
+              <div className="mt-3">
+                {/* 총 용량 표시 */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-gray-500">
+                    {uploadableFiles.length}개 파일
+                    {oversizedFiles.size > 0 && (
+                      <span className="text-red-500 ml-1">({oversizedFiles.size}개 크기 초과 제외)</span>
+                    )}
+                  </span>
+                  <span className={`text-xs font-medium ${totalExceeded ? 'text-red-500' : 'text-gray-500'}`}>
+                    {formatBytes(totalBytes)} / {MAX_TOTAL_MB}MB
+                  </span>
+                </div>
+
+                {/* 총합 프로그레스 바 */}
+                <div className="w-full h-1.5 bg-gray-100 rounded-full mb-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${totalExceeded ? 'bg-red-400' : totalBytes > MAX_TOTAL_BYTES * 0.8 ? 'bg-yellow-400' : 'bg-blue-400'}`}
+                    style={{ width: `${Math.min((totalBytes / MAX_TOTAL_BYTES) * 100, 100)}%` }}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  {allFiles.map(f => {
+                    const badge = getFileTypeBadge(f.name)
+                    const isHwp = f.name.toLowerCase().endsWith('.hwp')
+                    const isOversized = oversizedFiles.has(f.name)
+                    return (
+                      <div
+                        key={f.name}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                          isOversized
+                            ? 'border-red-200 bg-red-50'
+                            : isHwp
+                            ? 'border-orange-200 bg-orange-50'
+                            : 'border-gray-200 bg-white'
+                        }`}
                       >
-                        ✕
-                      </button>
-                    </div>
-                  )
-                })}
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                        <span className={`text-sm flex-1 truncate min-w-0 ${isOversized ? 'text-red-500 line-through' : 'text-gray-700'}`}>
+                          {f.name}
+                        </span>
+                        <span className={`text-xs flex-shrink-0 ${isOversized ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                          {formatBytes(f.size)}
+                        </span>
+                        {isOversized && (
+                          <span className="text-xs text-red-500 flex-shrink-0 whitespace-nowrap">⚠ {MAX_FILE_MB}MB 초과</span>
+                        )}
+                        {isHwp && !isOversized && (
+                          <span className="text-xs text-orange-500 flex-shrink-0 whitespace-nowrap">⚠ 변환 필요</span>
+                        )}
+                        <button
+                          onClick={() => removeFile(f.name)}
+                          className="text-gray-300 hover:text-red-400 flex-shrink-0 text-sm leading-none"
+                          title="제거"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {totalExceeded && (
+                  <p className="text-xs text-red-600 mt-2 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+                    총 업로드 용량이 {MAX_TOTAL_MB}MB를 초과했습니다. 불필요한 파일을 제거하세요.
+                  </p>
+                )}
               </div>
             )}
 
@@ -328,7 +380,7 @@ export default function InfoPage({ params }: Props) {
             <div className="mt-3">
               <button
                 onClick={handleParseRfp}
-                disabled={!rfpFile || parsing}
+                disabled={!rfpFile || parsing || totalExceeded}
                 className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {parsing ? (
@@ -345,7 +397,7 @@ export default function InfoPage({ params }: Props) {
                   HWPX · PDF · XLSX 파일을 추가하면 활성화됩니다
                 </p>
               )}
-              {allFiles.length > 0 && !rfpFile && (
+              {allFiles.length > 0 && !rfpFile && !allFiles.every(f => oversizedFiles.has(f.name)) && (
                 <p className="text-xs text-orange-500 mt-1 text-center">
                   HWP 구형 파일은 파싱 불가 — HWPX 또는 PDF로 변환 후 추가하세요
                 </p>
