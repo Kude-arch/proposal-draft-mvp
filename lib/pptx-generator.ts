@@ -12,6 +12,18 @@ function mmToIn(mm: number): number {
   return mm / 25.4
 }
 
+async function fetchImageAsDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = await res.arrayBuffer()
+    const mime = res.headers.get('content-type') ?? 'image/png'
+    return `data:${mime};base64,${Buffer.from(buf).toString('base64')}`
+  } catch {
+    return null
+  }
+}
+
 interface SlideSize {
   preset: string
   width_mm: number
@@ -83,6 +95,22 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
 
   const totalPages = slides.length
 
+  // 모든 이미지 URL 수집 후 병렬 프리패치 → data URI로 임베드
+  const allImageUrls = new Set<string>()
+  for (const slide of slides) {
+    for (const cell of slide.cells ?? []) {
+      if (cell.image_url && isSafeImageUrl(cell.image_url)) {
+        allImageUrls.add(cell.image_url)
+      }
+    }
+  }
+  const imageCache = new Map<string, string | null>()
+  await Promise.all(
+    Array.from(allImageUrls).map(async url => {
+      imageCache.set(url, await fetchImageAsDataUri(url))
+    })
+  )
+
   for (const slide of slides) {
     const sl = pptx.addSlide()
     const cols: number = slide.cols ?? 2
@@ -131,28 +159,15 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
         fill: { color: 'F5F7FA' }, line: { color: 'D0D9E8', pt: 1 },
       })
 
-      if (cell.image_url && isSafeImageUrl(cell.image_url)) {
+      const dataUri = cell.image_url ? imageCache.get(cell.image_url) : null
+      if (dataUri) {
         const imgH = cellH * 0.75
-        try {
-          sl.addImage({
-            path: cell.image_url,
-            x: cellX + mmToIn(1.5), y: cellY + mmToIn(1.5),
-            w: cellW - mmToIn(3), h: imgH - mmToIn(3),
-            sizing: { type: 'contain', w: cellW - mmToIn(3), h: imgH - mmToIn(3) },
-          })
-        } catch {
-          sl.addShape(pptx.ShapeType.rect, {
-            x: cellX + mmToIn(1.5), y: cellY + mmToIn(1.5),
-            w: cellW - mmToIn(3), h: imgH - mmToIn(3),
-            fill: { color: 'E0E7EF' }, line: { color: 'B0BCCC' },
-          })
-          sl.addText('이미지 로드 실패', {
-            x: cellX + mmToIn(1.5), y: cellY + imgH * 0.4,
-            w: cellW - mmToIn(3), h: mmToIn(10),
-            align: 'center', fontSize: 9, color: 'AAAAAA',
-            fontFace: 'Malgun Gothic',
-          })
-        }
+        sl.addImage({
+          data: dataUri,
+          x: cellX + mmToIn(1.5), y: cellY + mmToIn(1.5),
+          w: cellW - mmToIn(3), h: imgH - mmToIn(3),
+          sizing: { type: 'contain', w: cellW - mmToIn(3), h: imgH - mmToIn(3) },
+        })
 
         const titleY = cellY + imgH + mmToIn(2)
         const titleH = cellH - imgH - mmToIn(2)
