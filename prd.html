@@ -275,8 +275,8 @@
   <h1>제안서 초안 자동생성 시스템 MVP</h1>
   <p>건설사업관리 용역 제안서 초안 작성 자동화 — Product Requirements Document</p>
   <div class="badges">
-    <span class="badge">v0.8</span>
-    <span class="badge">2026-06-24</span>
+    <span class="badge">v1.0</span>
+    <span class="badge">2026-06-25</span>
     <span class="badge">Next.js · Supabase · Gemini</span>
     <span class="badge">격자 레이아웃 · PPTX 출력</span>
   </div>
@@ -483,6 +483,16 @@
         <td>PDF / HWPX / Excel 업로드 → Gemini로 핵심 정보 + 목차 자동 추출 → 폼에 채우기 제안 (HWP 구형 바이너리 제외)</td>
       </tr>
       <tr>
+        <td>도면 검토 메모 입력</td>
+        <td><span class="p1">P1</span></td>
+        <td>서술식·단답형·메모 등 자유 형식으로 도면 검토 내용 입력. Pass 0에서 Gemini가 핵심 내용을 정리하여 Tier B 키워드 추출. 예: "지하 4층 RC구조, 흙막이 CIP, 연약지반, 인접 아파트 민원 예상, 전이층 있음"</td>
+      </tr>
+      <tr>
+        <td>핵심 도면 PDF 업로드</td>
+        <td><span class="p2">P2</span></td>
+        <td>배치도·평면도·지반조사보고서 등 핵심 도면 5~10장 PDF 업로드 → Gemini Vision으로 분석하여 도면 검토 메모 자동 보강 (DWG는 PDF 변환 후 업로드 안내)</td>
+      </tr>
+      <tr>
         <td>추가 자료 업로드</td>
         <td><span class="p2">P2</span></td>
         <td>현장 사진, 위치도 등 참고 이미지 첨부 (슬라이드 셀에 직접 배치 가능)</td>
@@ -491,6 +501,11 @@
         <td>임시 저장</td>
         <td><span class="p1">P1</span></td>
         <td>입력 중 자동 저장, 나중에 이어서 작업 가능</td>
+      </tr>
+      <tr>
+        <td>입력 소스 현황 패널</td>
+        <td><span class="p1">P1</span></td>
+        <td>업로드·입력된 소스별(과업지시서·자료조사PPTX·도면 검토 메모·핵심 도면 PDF) 상태를 카드로 표시. 각 소스마다 분석 완료/입력 권장/선택사항 뱃지와 기여 Tier B 키워드 수를 표기. 미완료 소스에는 "입력 시 어떤 섹션 품질이 개선되는지" 힌트 포함</td>
       </tr>
     </table>
 
@@ -541,6 +556,11 @@
         <td>분석 결과 요약 표시</td>
         <td><span class="p2">P2</span></td>
         <td>AI가 파악한 현장 특성 요약을 사용자에게 보여주고 수정 허용</td>
+      </tr>
+      <tr>
+        <td>섹션별 분석 품질 표시</td>
+        <td><span class="p1">P1</span></td>
+        <td>목차 섹션마다 Tier B 키워드 충족도(%)·후보 아이템 수·기여 소스를 막대 게이지로 표시. 품질 낮은 섹션(기준: 50% 미만)에는 "도면 검토 메모 입력 시 개선" 등 구체적 보완 힌트 제공. 사용자가 어떤 자료를 추가해야 할지 즉시 파악 가능</td>
       </tr>
     </table>
 
@@ -1005,6 +1025,7 @@
       <tr><td>scale_area</td><td>numeric</td><td>연면적 (㎡)</td></tr>
       <tr><td>duration_months</td><td>integer</td><td>공사 기간 (개월)</td></tr>
       <tr><td>special_conditions</td><td>text</td><td>특이사항 (자유 텍스트)</td></tr>
+      <tr><td>drawing_review_raw</td><td>text</td><td>도면 검토 자유 입력 원문 (서술식·단답형 등 형식 무관). Pass 0에서 Gemini가 읽어 Tier B 키워드 추출</td></tr>
       <tr><td>rfp_file_url</td><td>text</td><td>업로드된 RFP 파일 Storage URL</td></tr>
       <tr><td>slide_size</td><td>jsonb</td><td>슬라이드 규격 {preset: "A4P"|"A3L"|"custom", width_mm, height_mm}</td></tr>
       <tr><td>slide_margins</td><td>jsonb</td><td>여백 설정 {top_mm, bottom_mm, left_mm, right_mm, gutter_col_mm, gutter_row_mm}</td></tr>
@@ -1209,8 +1230,15 @@
   "rfp_keywords": {
     "tier_a": ["공정관리", "품질관리", "안전관리", "BIM", "스마트건설"],
     "tier_b": ["교량", "수중기초", "도심지교통통제", "한강", "강교", "내진보강"]
+  },
+  "drawing_notes": {
+    "summary": "지하 4층 RC구조. 흙막이 CIP공법 적용. 연약지반으로 말뚝기초 예상. 인접 아파트 단지로 소음·진동 민원 리스크 높음. 전이층 구조로 시공 난이도 높음.",
+    "tier_b_extracted": ["CIP흙막이", "연약지반", "말뚝기초", "전이층", "소음진동민원", "인접아파트"]
   }
 }</pre>
+    </div>
+    <div class="callout orange" style="font-size:12px; margin-top:4px;">
+      <strong>drawing_notes 처리:</strong> 사용자가 도면 검토 메모를 자유 형식으로 입력하면, Gemini Pass 0이 RFP 텍스트와 함께 읽어 핵심 내용을 <code>summary</code>로 정리하고 Tier B 키워드를 <code>tier_b_extracted</code>로 추출합니다. 입력 형식(서술식·단답형·메모)에 무관하게 동작합니다.
     </div>
 
     <h4 style="margin:16px 0 8px; font-size:14px;">Pass 1 응답 스키마 (/api/analyze)</h4>
@@ -1227,11 +1255,28 @@
       "section_title": "공정관리",           // 발주처 목차 원문
       "search_description": "교량 확장공사의 수중 기초~상부 구조 순차 시공에 맞는 단계별 마스터스케줄, 교통 통제 구간별 공기 관리, BIM 기반 공정 모니터링 아이템 필요",
       "tier_b_for_section": ["교량", "수중기초", "단계별시공", "BIM공정"],
-      "slide_count_suggestion": 3
+      "slide_count_suggestion": 3,
+      "coverage_score": 88,
+      "coverage_sources": ["rfp_text", "pptx"],
+      "coverage_hint": null
+    },
+    {
+      "section_title": "특수공법 계획",
+      "search_description": "...",
+      "tier_b_for_section": ["수중기초"],
+      "slide_count_suggestion": 2,
+      "coverage_score": 22,
+      "coverage_sources": ["rfp_text"],
+      "coverage_hint": "도면·구조 정보 부족 — 도면 검토 메모 입력 시 개선 가능"
     }
     // ... 섹션 수만큼 반복
   ]
 }</pre>
+    </div>
+    <div class="callout orange" style="font-size:12px; margin-top:4px;">
+      <strong>coverage_score 계산:</strong> (tier_b_for_section 키워드 수 × 6 + 검색 후보 아이템 수 × 2) ÷ 섹션별 최대 기대값 × 100.
+      <code>coverage_sources</code>는 해당 섹션 키워드에 기여한 소스 목록 (rfp_text / pptx / drawing_notes / drawing_pdf).
+      <code>coverage_hint</code>는 score &lt; 50 일 때만 채움 — 사용자에게 어떤 소스를 보완해야 하는지 안내.
     </div>
     <div class="callout orange" style="font-size:12px; margin-top:4px;">
       <strong>주의:</strong> section_big exact match(<code>matched_section_big</code>) 제거.
@@ -1620,6 +1665,27 @@
         <li><code>construction_type</code> 추출: 과업범위 공종 목록("건축·토목·조경") 또는 구조·용도("철근콘크리트/공공청사" → ["건축"])에서 파악</li>
         <li><code>scale_area</code>: 연면적(㎡), <code>scale_amount</code>: 용역 예정금액(원) 우선, 없으면 공사비(원) 사용</li>
         <li>Tier B 키워드는 사업 고유 기술·지역·공법 용어 추출 — "세종", "NATM", "연약지반", "행복주택", "전이층" 수준의 구체성 요구</li>
+        <li><strong>도면 검토 메모 처리</strong>: 사용자가 입력한 <code>drawing_review_raw</code>를 <code>[도면 검토 메모]</code>로 RFP 텍스트와 함께 프롬프트에 결합. 형식(서술식·단답형·메모)에 무관하게 핵심 내용 요약 + Tier B 추가 추출</li>
+      </ul>
+
+      <h5 style="margin:16px 0 8px; font-size:14px;">설계도서(도면) 처리 전략</h5>
+      <ul>
+        <li><strong>도면 검토 자유 입력 (P1)</strong>: 사람이 직접 도면을 검토한 후 서술식·단답형·메모 등 자유 형식으로 입력. UI는 단일 textarea. Gemini가 Pass 0에서 읽어 핵심 요약(<code>drawing_notes.summary</code>)과 Tier B 키워드(<code>drawing_notes.tier_b_extracted</code>) 자동 추출</li>
+        <li><strong>핵심 도면 PDF 직접 분석 (P2)</strong>: 배치도·층별 평면도·단면도·지반조사 시추주상도 등 핵심 도면 5~10장 PDF 업로드 → Gemini Vision으로 현장 형태·지하 깊이·층수·특수 구조 요소 자동 추출 → drawing_notes 보강</li>
+        <li><strong>DWG 파일 처리</strong>: Gemini가 직접 읽을 수 없음. 시스템은 DWG 업로드 시 "주요 도면을 PDF로 변환 후 업로드해 주세요" 안내 표시</li>
+        <li><strong>대용량 설계도서 전체 분석은 MVP 제외</strong>: 2519(DWG 620개), 2549(PDF 도면 1,189개) 수준의 전체 분석은 비용·시간 비효율 → 핵심 도면 선택 업로드 방식으로 대응</li>
+      </ul>
+    </div>
+
+    <div class="resolved-q">
+      <h4>✅ Q7. AI 자료조사 자동화 — 방향 결정됨</h4>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">팀이 수행하던 "자료조사 PPT 제작" 과정(공고문·과업지시서 분석 + 설계도서 검토 + 웹 서칭 + 현장여건 정리)을 AI가 어느 수준까지 대체할 수 있는지, 어떤 설계로 반영하는지 결정합니다.</p>
+      <ul>
+        <li><strong>공고문·과업지시서 분석</strong>: Pass 0에서 이미 처리 — form_fields + sections + tier_a/b 키워드 자동 추출</li>
+        <li><strong>설계도서(도면) 검토</strong>: 전체 자동화 불가 (DWG 불가, 대용량 PDF 비효율). <strong>사람이 도면 검토 후 자유 텍스트로 메모 입력 → Gemini가 핵심 요약 + Tier B 추출</strong> (Q5 결정 내용). 핵심 도면 PDF 선택 업로드 시 Vision 분석으로 보강 (P2)</li>
+        <li><strong>웹 서칭 (P2)</strong>: Pass 1에서 Gemini Search Grounding 활용. 사업명·위치 기반으로 인접 공사 현황, 교통 계획, 지역 특성, 발주기관 관련 뉴스 등 자동 조사 → <code>site_analysis.web_context</code>로 저장하여 섹션별 키워드 생성에 활용</li>
+        <li><strong>자료조사 PPT 대체 방식</strong>: 별도 PPT 파일을 만드는 것이 아니라, 시스템 내 사업여건 분석 카드(<code>site_analysis</code>)로 대체. 자료조사 PPTX를 현장 정보 입력 단계에서 추가 파일로 업로드하면 tier_b 키워드 소스로 활용 (기존 Q5 Layer 2 규정 유지)</li>
+        <li><strong>MVP 범위</strong>: 웹 서칭(Gemini Grounding)은 P2. MVP에서는 수동 입력(도면 검토 메모 + 자료조사 PPTX 업로드)으로 사업여건을 보강하는 구조를 먼저 완성</li>
       </ul>
     </div>
 
@@ -1645,7 +1711,7 @@
 
 <footer>
   <div class="container">
-    제안서 초안 자동생성 시스템 MVP — PRD v0.8 &nbsp;|&nbsp; 2026-06-25<br>
+    제안서 초안 자동생성 시스템 MVP — PRD v1.0 &nbsp;|&nbsp; 2026-06-25<br>
     <span style="opacity:0.6;">미래사업팀 내부 검토용 문서</span>
   </div>
 </footer>
