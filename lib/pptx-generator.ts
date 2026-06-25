@@ -10,6 +10,48 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
   const HEADER_H = 0.9
   const MARGIN = 0.3
 
+  // Q1 FIX: 표지를 먼저 추가해야 첫 페이지가 됨
+  const cover = pptx.addSlide()
+  cover.addShape(pptx.ShapeType.rect, {
+    x: 0, y: 0, w: SLIDE_W, h: SLIDE_H,
+    fill: { color: '1E3A5F' },
+    line: { color: '1E3A5F' },
+  })
+  // 상단 악센트 바
+  cover.addShape(pptx.ShapeType.rect, {
+    x: 0, y: 5.8, w: SLIDE_W, h: 0.08,
+    fill: { color: '4A90D9' },
+    line: { color: '4A90D9' },
+  })
+  cover.addText(proposal.title ?? '제안서', {
+    x: 1.5, y: 1.8, w: SLIDE_W - 3, h: 1.4,
+    fontSize: 34, bold: true, color: 'FFFFFF', align: 'center',
+    fontFace: 'Malgun Gothic',
+  })
+  cover.addText('건설사업관리 용역 제안서', {
+    x: 1.5, y: 3.3, w: SLIDE_W - 3, h: 0.6,
+    fontSize: 16, color: '88AACC', align: 'center',
+    fontFace: 'Malgun Gothic',
+  })
+  if (proposal.client) {
+    cover.addText(proposal.client, {
+      x: 1.5, y: 4.2, w: SLIDE_W - 3, h: 0.6,
+      fontSize: 18, color: 'AACCEE', align: 'center',
+      fontFace: 'Malgun Gothic',
+    })
+  }
+  const metaParts: string[] = []
+  if (proposal.location) metaParts.push(proposal.location)
+  if (proposal.duration_months) metaParts.push(`과업기간 ${proposal.duration_months}개월`)
+  if (metaParts.length > 0) {
+    cover.addText(metaParts.join('  |  '), {
+      x: 1.5, y: 5.0, w: SLIDE_W - 3, h: 0.4,
+      fontSize: 11, color: '6688AA', align: 'center',
+      fontFace: 'Malgun Gothic',
+    })
+  }
+
+  // 본문 슬라이드
   for (const slide of slides) {
     const sl = pptx.addSlide()
 
@@ -19,17 +61,20 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
       fill: { color: '1E3A5F' },
       line: { color: '1E3A5F' },
     })
+    // 헤더 하단 악센트
+    sl.addShape(pptx.ShapeType.rect, {
+      x: 0, y: HEADER_H, w: SLIDE_W, h: 0.04,
+      fill: { color: '4A90D9' },
+      line: { color: '4A90D9' },
+    })
 
-    // 슬라이드 제목
     sl.addText(slide.slide_title ?? '', {
-      x: MARGIN, y: 0.1, w: SLIDE_W - MARGIN * 2, h: 0.7,
+      x: MARGIN, y: 0.1, w: SLIDE_W - MARGIN * 2 - 0.8, h: 0.7,
       fontSize: 20, bold: true, color: 'FFFFFF',
       fontFace: 'Malgun Gothic',
     })
-
-    // 페이지 번호
     sl.addText(`${slide.slide_number}`, {
-      x: SLIDE_W - 1.0, y: 0.1, w: 0.7, h: 0.7,
+      x: SLIDE_W - 0.9, y: 0.1, w: 0.6, h: 0.7,
       fontSize: 12, color: 'AACCEE', align: 'right',
       fontFace: 'Malgun Gothic',
     })
@@ -39,14 +84,13 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
     )
     const cellCount = cells.length || 2
     const cellW = (SLIDE_W - MARGIN * (cellCount + 1)) / cellCount
-    const cellH = SLIDE_H - HEADER_H - MARGIN * 2
-    const cellY = HEADER_H + MARGIN
+    const cellH = SLIDE_H - HEADER_H - MARGIN * 2 - 0.04
+    const cellY = HEADER_H + MARGIN + 0.04
 
     for (let ci = 0; ci < cellCount; ci++) {
       const cell = cells[ci] ?? {}
       const cellX = MARGIN + ci * (cellW + MARGIN)
 
-      // 셀 배경
       sl.addShape(pptx.ShapeType.rect, {
         x: cellX, y: cellY, w: cellW, h: cellH,
         fill: { color: 'F5F7FA' },
@@ -54,44 +98,40 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
       })
 
       if (cell.image_url) {
-        // 이미지 영역 (상단 70%)
-        const imgH = cellH * 0.7
+        const imgH = cellH * 0.72
         try {
           sl.addImage({
             path: cell.image_url,
-            x: cellX + 0.05, y: cellY + 0.05,
-            w: cellW - 0.1, h: imgH - 0.1,
-            sizing: { type: 'contain', w: cellW - 0.1, h: imgH - 0.1 },
+            x: cellX + 0.06, y: cellY + 0.06,
+            w: cellW - 0.12, h: imgH - 0.12,
+            sizing: { type: 'contain', w: cellW - 0.12, h: imgH - 0.12 },
           })
         } catch {
-          // 이미지 로드 실패 시 플레이스홀더
           sl.addShape(pptx.ShapeType.rect, {
-            x: cellX + 0.05, y: cellY + 0.05,
-            w: cellW - 0.1, h: imgH - 0.1,
+            x: cellX + 0.06, y: cellY + 0.06,
+            w: cellW - 0.12, h: imgH - 0.12,
             fill: { color: 'E0E7EF' },
             line: { color: 'B0BCCC' },
           })
-          sl.addText('이미지 없음', {
-            x: cellX + 0.05, y: cellY + imgH * 0.4,
-            w: cellW - 0.1, h: 0.4,
-            align: 'center', fontSize: 10, color: '888888',
+          sl.addText('이미지 로드 실패', {
+            x: cellX + 0.06, y: cellY + imgH * 0.4,
+            w: cellW - 0.12, h: 0.4,
+            align: 'center', fontSize: 9, color: 'AAAAAA',
             fontFace: 'Malgun Gothic',
           })
         }
 
-        // 아이템 제목 (하단 30%)
-        const titleY = cellY + imgH + 0.1
-        const titleH = cellH * 0.3 - 0.15
+        const titleY = cellY + imgH + 0.08
+        const titleH = cellH - imgH - 0.1
         sl.addText(cell.item_title ?? '', {
           x: cellX + 0.1, y: titleY, w: cellW - 0.2, h: titleH,
           fontSize: 9, color: '2C3E50', wrap: true,
           fontFace: 'Malgun Gothic', valign: 'top',
         })
       } else {
-        // 빈 셀 플레이스홀더
         sl.addShape(pptx.ShapeType.rect, {
-          x: cellX + 0.05, y: cellY + 0.05,
-          w: cellW - 0.1, h: cellH - 0.1,
+          x: cellX + 0.06, y: cellY + 0.06,
+          w: cellW - 0.12, h: cellH - 0.12,
           fill: { color: 'EEF1F5' },
           line: { color: 'C5CDD9', pt: 1, dashType: 'dash' },
         })
@@ -104,33 +144,6 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
       }
     }
   }
-
-  // 표지 슬라이드 prepend
-  const cover = pptx.addSlide()
-  cover.addShape(pptx.ShapeType.rect, {
-    x: 0, y: 0, w: SLIDE_W, h: SLIDE_H,
-    fill: { color: '1E3A5F' },
-  })
-  cover.addText(proposal.title ?? '제안서', {
-    x: 1, y: 2.5, w: SLIDE_W - 2, h: 1.2,
-    fontSize: 36, bold: true, color: 'FFFFFF', align: 'center',
-    fontFace: 'Malgun Gothic',
-  })
-  cover.addText(proposal.client ?? '', {
-    x: 1, y: 4.0, w: SLIDE_W - 2, h: 0.7,
-    fontSize: 20, color: 'AACCEE', align: 'center',
-    fontFace: 'Malgun Gothic',
-  })
-  cover.addText('건설사업관리 용역 제안서', {
-    x: 1, y: 4.8, w: SLIDE_W - 2, h: 0.6,
-    fontSize: 16, color: '88AACC', align: 'center',
-    fontFace: 'Malgun Gothic',
-  })
-
-  // 표지를 첫 번째로 이동 (pptxgenjs는 순서 이동이 없으므로 커버를 먼저 추가하고 싶으면
-  // 위 addSlide 순서를 바꿔야 하지만, 여기서는 마지막 추가라 마지막으로 감)
-  // 실제로는 cover를 먼저 만들어야 하지만 현 구조상 마지막에 추가됨
-  // TODO: 표지를 첫 페이지로 위치시키는 처리 필요
 
   const buf = (await pptx.write({ outputType: 'nodebuffer' })) as Buffer
   return buf
