@@ -26,7 +26,7 @@ export default function ItemPanel({ sectionTitle, tierBKeywords, onSelect }: Ite
         body: JSON.stringify({ tier_b_keywords: kws, limit: 30 }),
       })
       const data = await res.json()
-      setItems(data)
+      setItems(res.ok && Array.isArray(data) ? data : [])
       setSearched(true)
     } finally {
       setLoading(false)

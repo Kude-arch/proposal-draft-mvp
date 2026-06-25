@@ -18,10 +18,11 @@ export async function POST(req: NextRequest) {
   // 각 키워드로 ILIKE 검색 후 스코어 계산
   const keywords: string[] = tier_b_keywords.slice(0, 10)
 
-  // title + content_text ILIKE 검색
-  const conditions = keywords.map(kw =>
-    `title.ilike.%${kw}%,content_text.ilike.%${kw}%`
-  ).join(',')
+  // title + content_text ILIKE 검색 (PostgREST 필터 문법 특수문자 제거)
+  const conditions = keywords.map(kw => {
+    const safe = kw.replace(/[,()]/g, '')
+    return `title.ilike.%${safe}%,content_text.ilike.%${safe}%`
+  }).join(',')
 
   const { data: items, error } = await sb
     .from('proposal_items')

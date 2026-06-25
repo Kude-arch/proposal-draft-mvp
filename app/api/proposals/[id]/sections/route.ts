@@ -36,7 +36,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body: Array<{ id?: string; title: string; order_index: number; slide_count?: number }> = await req.json()
   const sb = createServerClient()
   // 전체 섹션 목록 교체
-  await sb.from('proposal_sections').delete().eq('proposal_id', id)
+  const { error: deleteError } = await sb.from('proposal_sections').delete().eq('proposal_id', id)
+  if (deleteError) return Response.json({ error: deleteError.message }, { status: 500 })
   if (body.length > 0) {
     const rows = body.map((s, i) => ({
       id: s.id?.startsWith('new-') ? undefined : s.id,

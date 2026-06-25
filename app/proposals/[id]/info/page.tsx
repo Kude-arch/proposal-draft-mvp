@@ -187,7 +187,7 @@ export default function InfoPage({ params }: Props) {
   async function handleSave() {
     setSaving(true)
     try {
-      await fetch(`/api/proposals/${id}`, {
+      const res = await fetch(`/api/proposals/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -201,7 +201,13 @@ export default function InfoPage({ params }: Props) {
           drawing_review_raw: drawingMemo,
         }),
       })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? '저장 실패')
+      }
       router.push(`/proposals/${id}/toc`)
+    } catch (e) {
+      setParseError(e instanceof Error ? e.message : '저장 실패')
     } finally {
       setSaving(false)
     }

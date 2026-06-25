@@ -78,8 +78,7 @@ export default function GeneratePage({ params }: Props) {
       setDone(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : '오류 발생')
-      const runningIdx = phases.findIndex(p => p.status === 'running')
-      if (runningIdx >= 0) setPhaseStatus(runningIdx, 'error')
+      setPhases(prev => prev.map(p => p.status === 'running' ? { ...p, status: 'error' } : p))
     } finally {
       setRunning(false)
     }

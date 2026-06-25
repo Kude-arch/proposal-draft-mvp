@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { parseHwpx } from '@/lib/parsers/hwpx'
 import { parseXlsx } from '@/lib/parsers/xlsx-parser'
-import { generateJson, generateJsonWithFile, uploadPdfToGemini } from '@/lib/gemini'
+import { generateJson, generateJsonWithFiles, uploadPdfToGemini } from '@/lib/gemini'
 import { detectDocType } from '@/lib/utils'
 import type { Pass0Result } from '@/types'
 
@@ -47,14 +47,13 @@ export async function POST(req: NextRequest) {
 
   let result: Pass0Result
   if (pdfUris.length > 0) {
-    // PDF가 있으면 첫 번째 PDF를 주 문서로 사용
-    const mainPdf = pdfUris[0]
-    const extraText = [
-      ...docTexts.map(d => `${d.label}\n${d.text}`),
-      ...pdfUris.slice(1).map(p => `${p.label}: [PDF 파일 별도 업로드됨]`),
-    ].join('\n\n')
+    // 모든 PDF를 Gemini에 전달 (multi-file content)
+    const extraText = docTexts.map(d => `${d.label}\n${d.text}`).join('\n\n')
     const promptWithExtra = extraText ? `${pass0Prompt}\n\n[추가 문서]\n${extraText}` : pass0Prompt
-    result = await generateJsonWithFile<Pass0Result>(mainPdf.uri, 'application/pdf', promptWithExtra)
+    result = await generateJsonWithFiles<Pass0Result>(
+      pdfUris.map(p => ({ uri: p.uri, mimeType: 'application/pdf' })),
+      promptWithExtra
+    )
   } else {
     result = await generateJson<Pass0Result>(pass0Prompt)
   }

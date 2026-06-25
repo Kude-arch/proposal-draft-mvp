@@ -49,3 +49,15 @@ export async function generateJsonWithFile<T>(
   ])
   return JSON.parse(result.response.text()) as T
 }
+
+export async function generateJsonWithFiles<T>(
+  files: Array<{ uri: string; mimeType: string }>,
+  prompt: string
+): Promise<T> {
+  const model = getModel(true)
+  const result = await model.generateContent([
+    ...files.map(f => ({ fileData: { mimeType: f.mimeType, fileUri: f.uri } })),
+    { text: prompt },
+  ])
+  return JSON.parse(result.response.text()) as T
+}

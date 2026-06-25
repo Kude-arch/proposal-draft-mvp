@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { generateJson } from '@/lib/gemini'
+import { isValidUuid } from '@/lib/utils'
 import type { Pass2Slide, SectionPlan } from '@/types'
 
 interface CandidateItem {
@@ -18,6 +19,9 @@ interface GeminiSelectionResult {
 
 export async function POST(req: NextRequest) {
   const { proposal_id } = await req.json()
+  if (!proposal_id || !isValidUuid(proposal_id)) {
+    return Response.json({ error: 'invalid proposal_id' }, { status: 400 })
+  }
   const sb = createServerClient()
 
   const { data: proposal } = await sb
@@ -58,7 +62,10 @@ export async function POST(req: NextRequest) {
     if (tierBKeywords.length > 0) {
       const conditions = tierBKeywords
         .slice(0, 8)
-        .map(kw => `title.ilike.%${kw}%,content_text.ilike.%${kw}%`)
+        .map(kw => {
+          const safe = kw.replace(/[,()]/g, '')
+          return `title.ilike.%${safe}%,content_text.ilike.%${safe}%`
+        })
         .join(',')
       const { data: items } = await sb
         .from('proposal_items')
@@ -133,8 +140,8 @@ ${sectionBlocks}
           geminiSelectionMap.set(section.id, sel.selected_item_ids ?? [])
         }
       }
-    } catch {
-      // Gemini 실패 시 키워드 순 fallback (로그만)
+    } catch (e) {
+      console.error('Gemini 아이템 선택 실패, 키워드 순 fallback:', e)
     }
   }
 

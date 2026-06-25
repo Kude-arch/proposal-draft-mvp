@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server'
 import { generateJson } from '@/lib/gemini'
 import { createServerClient } from '@/lib/supabase'
+import { isValidUuid } from '@/lib/utils'
 import type { Pass1Result } from '@/types'
 
 export async function POST(req: NextRequest) {
   const { proposal_id } = await req.json()
+  if (!proposal_id || !isValidUuid(proposal_id)) {
+    return Response.json({ error: 'invalid proposal_id' }, { status: 400 })
+  }
   const sb = createServerClient()
 
   const { data: proposal } = await sb

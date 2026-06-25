@@ -1,5 +1,13 @@
 import PptxGenJS from 'pptxgenjs'
 
+function isSafeImageUrl(url: string): boolean {
+  try {
+    return new URL(url).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer> {
   const pptx = new PptxGenJS()
@@ -101,7 +109,7 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
         line: { color: 'D0D9E8', pt: 1 },
       })
 
-      if (cell.image_url) {
+      if (cell.image_url && isSafeImageUrl(cell.image_url)) {
         const imgH = cellH * 0.72
         try {
           sl.addImage({

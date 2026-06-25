@@ -1,3 +1,7 @@
+export function isValidUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+}
+
 export function mmToIn(mm: number): number {
   return mm / 25.4
 }

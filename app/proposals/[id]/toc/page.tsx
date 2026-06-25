@@ -22,6 +22,7 @@ export default function TocPage({ params }: Props) {
   const [sections, setSections] = useState<Section[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [newTitle, setNewTitle] = useState('')
   const [aiSections, setAiSections] = useState<string[]>([])
 
@@ -89,13 +90,20 @@ export default function TocPage({ params }: Props) {
   async function handleSave() {
     if (!sections.length) return
     setSaving(true)
+    setSaveError('')
     try {
-      await fetch(`/api/proposals/${id}/sections`, {
+      const res = await fetch(`/api/proposals/${id}/sections`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sections),
       })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? '저장 실패')
+      }
       router.push(`/proposals/${id}/generate`)
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : '저장 실패')
     } finally {
       setSaving(false)
     }
@@ -238,6 +246,12 @@ export default function TocPage({ params }: Props) {
           추가
         </button>
       </div>
+
+      {saveError && (
+        <p className="mb-3 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+          {saveError}
+        </p>
+      )}
 
       <div className="flex justify-between">
         <button
