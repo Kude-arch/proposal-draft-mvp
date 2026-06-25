@@ -51,7 +51,10 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
     })
   }
 
-  // 본문 슬라이드
+  // 표지를 제외한 실제 본문 쪽수
+  const totalPages = slides.length
+
+  // 본문 슬라이드 (표지 다음부터, 쪽번호는 1~totalPages)
   for (const slide of slides) {
     const sl = pptx.addSlide()
 
@@ -69,13 +72,14 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
     })
 
     sl.addText(slide.slide_title ?? '', {
-      x: MARGIN, y: 0.1, w: SLIDE_W - MARGIN * 2 - 0.8, h: 0.7,
+      x: MARGIN, y: 0.1, w: SLIDE_W - MARGIN * 2 - 1.2, h: 0.7,
       fontSize: 20, bold: true, color: 'FFFFFF',
       fontFace: 'Malgun Gothic',
     })
-    sl.addText(`${slide.slide_number}`, {
-      x: SLIDE_W - 0.9, y: 0.1, w: 0.6, h: 0.7,
-      fontSize: 12, color: 'AACCEE', align: 'right',
+    // 쪽번호: "1 / 20" 형식, 표지 제외 카운트
+    sl.addText(`${slide.slide_number} / ${totalPages}`, {
+      x: SLIDE_W - 1.5, y: 0.1, w: 1.2, h: 0.7,
+      fontSize: 11, color: 'AACCEE', align: 'right',
       fontFace: 'Malgun Gothic',
     })
 
