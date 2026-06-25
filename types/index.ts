@@ -1,5 +1,22 @@
 export type ProposalStatus = 'draft' | 'analyzing' | 'slides_ready' | 'editing' | 'exported'
 
+export type SlidePreset = 'A4P' | 'A4L' | 'A3P' | 'A3L' | 'custom'
+
+export interface SlideSize {
+  preset: SlidePreset
+  width_mm: number
+  height_mm: number
+}
+
+export interface SlideMargins {
+  top_mm: number
+  bottom_mm: number
+  left_mm: number
+  right_mm: number
+  gutter_col_mm: number
+  gutter_row_mm: number
+}
+
 export interface Proposal {
   id: string
   title: string
@@ -18,21 +35,6 @@ export interface Proposal {
   status: ProposalStatus
   created_at: string
   updated_at: string
-}
-
-export interface SlideSize {
-  preset: 'A4P' | 'A3L' | 'custom'
-  width_mm: number
-  height_mm: number
-}
-
-export interface SlideMargins {
-  top_mm: number
-  bottom_mm: number
-  left_mm: number
-  right_mm: number
-  gutter_col_mm: number
-  gutter_row_mm: number
 }
 
 export interface AiAnalysis {
@@ -77,6 +79,8 @@ export interface ProposalSlide {
   order_index: number
   layout_type: string
   slide_title: string | null
+  cols: number
+  rows: number
   created_at: string
   cells?: SlideCell[]
 }
@@ -88,10 +92,10 @@ export interface SlideCell {
   db_item_id: string | null
   image_url: string | null
   item_title: string | null
-  position_x: number | null
-  position_y: number | null
-  width: number | null
-  height: number | null
+  col_start: number
+  row_start: number
+  col_span: number
+  row_span: number
   created_at: string
 }
 
@@ -138,14 +142,43 @@ export interface Pass1Result {
   section_plans: SectionPlan[]
 }
 
+export interface GeminiCell {
+  col_start: number
+  row_start: number
+  col_span: number
+  row_span: number
+  item_id: string | null
+}
+
+export interface GeminiSlide {
+  cols: number
+  rows: number
+  cells: GeminiCell[]
+}
+
+export interface GeminiSectionSelection {
+  section_title: string
+  slides: GeminiSlide[]
+}
+
+export interface Pass2Result {
+  selections: GeminiSectionSelection[]
+}
+
 export interface Pass2Slide {
   slide_number: number
   section_title: string
   layout_type: string
+  cols: number
+  rows: number
   cells: Array<{
     cell_index: number
     db_item_id: string | null
     image_url: string | null
     item_title: string | null
+    col_start: number
+    row_start: number
+    col_span: number
+    row_span: number
   }>
 }
