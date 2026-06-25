@@ -64,7 +64,7 @@ export interface ProposalSection {
   proposal_id: string
   title: string
   order_index: number
-  target_slides: number | null
+  slide_count: number
   search_keywords: string[]
   created_at: string
 }

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const body: Array<{ id?: string; title: string; order_index: number; target_slides?: number; slide_count?: number }> = await req.json()
+  const body: Array<{ id?: string; title: string; order_index: number; slide_count?: number }> = await req.json()
   const sb = createServerClient()
   // 전체 섹션 목록 교체
   await sb.from('proposal_sections').delete().eq('proposal_id', id)
@@ -43,7 +43,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       proposal_id: id,
       title: s.title,
       order_index: i,
-      target_slides: s.slide_count ?? s.target_slides ?? 2,
       slide_count: s.slide_count ?? 2,
     }))
     const { error } = await sb.from('proposal_sections').insert(rows)
