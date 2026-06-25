@@ -41,6 +41,10 @@ export default function EditPage({ params }: Props) {
     loadSlides()
   }, [loadSlides])
 
+  function handleSlideUpdate(updatedSlide: ProposalSlide & { cells: SlideCell[] }) {
+    setSlides(prev => prev.map(s => s.id === updatedSlide.id ? updatedSlide : s))
+  }
+
   async function handleCellUpdate(slideId: string, cellId: string, item: ProposalItem | null) {
     const res = await fetch(`/api/slides/${slideId}/cells/${cellId}`, {
       method: 'PATCH',
@@ -130,6 +134,7 @@ export default function EditPage({ params }: Props) {
           <SlideGrid
             slides={slides}
             onCellUpdate={handleCellUpdate}
+            onSlideUpdate={handleSlideUpdate}
             sectionKeywords={sectionKeywords}
           />
         )}
