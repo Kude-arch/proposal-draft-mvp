@@ -275,7 +275,7 @@
   <h1>제안서 초안 자동생성 시스템 MVP</h1>
   <p>건설사업관리 용역 제안서 초안 작성 자동화 — Product Requirements Document</p>
   <div class="badges">
-    <span class="badge">v0.7</span>
+    <span class="badge">v0.8</span>
     <span class="badge">2026-06-24</span>
     <span class="badge">Next.js · Supabase · Gemini</span>
     <span class="badge">격자 레이아웃 · PPTX 출력</span>
@@ -1567,9 +1567,9 @@
       <h4>✅ Q3. 섹션별 슬라이드 수 기준 — 결정됨</h4>
       <ul>
         <li><strong>총 페이지</strong>: 발주처마다 다름. A4 기준 8~50p 범위 → 사용자가 제안서 생성 시 총 목표 페이지 수를 직접 입력</li>
-        <li><strong>목차 구조 참조 기준</strong>: proposal-db-mvp의 아이템 DB에서 <code>section_big</code>(대항목) / <code>section_small</code>(소항목) 구조를 실제 목차 체계로 사용. taxonomy 10개 카테고리는 키워드 검색용이며 목차 구조와 별개</li>
-        <li><strong>AI 섹션 매칭</strong>: 사용자가 입력한 발주처 목차의 각 섹션 → DB의 <code>section_big</code> 중 가장 유사한 항목으로 매핑 → 해당 <code>section_big</code> 하위 아이템 풀에서 검색</li>
-        <li><strong>AI 슬라이드 수 배분 로직</strong>: (1) 총 목표 페이지 ÷ 섹션 수 = 평균 배분. (2) 매핑된 <code>section_big</code>별 DB 아이템 수가 많을수록 가중치 상향 조정. (3) 섹션별 목표 수는 목차 편집 단계에서 사용자가 수동 override 가능</li>
+        <li><strong>목차 구조 참조 기준</strong>: proposal-db-mvp의 <code>section_big</code> / <code>section_small</code>은 발주처별 원문이 다른 비표준 컬럼(Supabase 실측 확인) → 아이템 검색에 사용하지 않음. 검색은 <code>title</code> + <code>keywords</code> + <code>content_text</code> 기반 전문검색으로 수행</li>
+        <li><strong>AI 섹션 매칭</strong>: 사용자 목차 섹션명 + RFP Tier A/B 키워드 → Gemini가 섹션별 <code>search_description</code>과 <code>tier_b_for_section</code> 생성 → DB 전문검색으로 후보 아이템 수집 → 후보 수가 많은 섹션에 슬라이드 수 가중치 상향</li>
+        <li><strong>AI 슬라이드 수 배분 로직</strong>: (1) 총 목표 페이지 ÷ 섹션 수 = 평균 배분. (2) 섹션별 검색 후보 아이템 수가 많을수록 가중치 상향 조정. (3) 섹션별 목표 수는 목차 편집 단계에서 사용자가 수동 override 가능</li>
         <li><strong>실무 특성</strong>: 섹션 간 슬라이드 수 편차가 크므로 AI 자동 배분은 초기 참고값으로만 사용, 최종은 사용자 조정</li>
       </ul>
     </div>
@@ -1580,13 +1580,51 @@
         <li><strong>실제 사용 형식</strong>: PDF / HWP / Excel 세 가지</li>
         <li><strong>PDF</strong> <span class="tag green">P1 완전 지원</span> — Gemini File API로 직접 파싱. 텍스트·표·목차 추출 가능</li>
         <li><strong>Excel</strong> <span class="tag green">P1 완전 지원</span> — <code>xlsx</code> 라이브러리(Node.js)로 파싱 후 텍스트 변환 → Gemini 전달. 공정표·내역서 형태의 RFP에 대응</li>
-        <li><strong>HWPX</strong> <span class="tag green">P2 지원</span> — HWPX는 ZIP + XML 구조(DOCX와 유사)이므로 <code>jszip</code>으로 압축 해제 후 XML 파싱으로 텍스트 추출 가능. 완벽한 렌더링은 불가능하지만 목차·본문 텍스트 추출 수준으로 충분</li>
+        <li><strong>HWPX</strong> <span class="tag green">P1 지원</span> — ZIP + XML 구조. <code>jszip</code>으로 압축 해제 → <code>Contents/section0.xml</code>의 <code>&lt;t&gt;</code> 태그 내부 텍스트 수집 → 공백 결합. 실측: 과업지시서 1건 기준 39,272자 완전 추출 확인 (Gemini 2.0 Flash 128k context 내 처리 가능)</li>
         <li><strong>HWP (구형 바이너리)</strong> <span class="tag orange">MVP 제외 → 사전 변환 안내</span> — 바이너리 포맷으로 파싱 라이브러리가 불안정하고 라이선스 제약 있음. 업로드 시 "HWP(구형)는 PDF 또는 HWPX로 변환 후 업로드해 주세요" 안내 표시</li>
       </ul>
     </div>
 
     <div class="resolved-q">
-      <h4>✅ Q5. PPTX → Illustrator 워크플로우 — 확장 방향 결정됨</h4>
+      <h4>✅ Q5. RFP 파싱 파이프라인 — 실물 RFP 10건 분석 기반 확정</h4>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">건설사업관리 용역 RFP 10개 프로젝트(2516·2519·2549·2565·2577·2601·2605·2606·2611·2641)를 직접 열어 파일 구조 및 내용을 분석한 결과입니다.</p>
+
+      <h5 style="margin:16px 0 8px; font-size:14px;">실물 RFP 현황</h5>
+      <ul>
+        <li><strong>핵심 문서</strong>: <strong>과업내용서/과업지시서</strong> (10건 전체 존재, 용역명·발주처·규모·기간·업무 범위 모두 포함) → 주 파싱 대상</li>
+        <li><strong>보조 문서</strong>: 배치계획표 XLS/XLSX (기술인 규모·직급 → 사업 복잡도 판단), 공고문 (예산액, 발주기관명), 평가기준 (강조 항목 파악)</li>
+        <li><strong>파일 형식 현황</strong>: HWP 구형 8건+, HWPX 병행 제공 2건(2549·2641), PDF 병행 제공 3건(2641·2577·2611) → HWP 구형 비중이 높아 변환 안내가 중요</li>
+        <li><strong>다중 파일 업로드</strong>: 실무에서 여러 문서를 함께 받으므로 복수 파일 업로드 허용. 과업내용서를 최우선으로, 나머지는 보조 문서로 처리</li>
+      </ul>
+
+      <h5 style="margin:16px 0 8px; font-size:14px;">파일 유형별 파싱 구현</h5>
+      <ul>
+        <li><strong>HWPX</strong>: <code>jszip</code> → <code>Contents/section0.xml</code> 압축 해제 → XML <code>&lt;t&gt;</code> 태그 텍스트 수집 → 공백 결합. (<code>Preview/PrvText.txt</code>는 2,229바이트 제한으로 불충분)</li>
+        <li><strong>PDF</strong>: Gemini File API(<code>uploadFile</code>)로 직접 전달 → 텍스트·표·목차 구조 추출</li>
+        <li><strong>XLSX/XLS</strong>: <code>xlsx</code> 라이브러리 → 시트별 셀 값 추출 → 텍스트 변환 후 Gemini 전달 (배치계획표의 기술인 직급·투입 기간 파악용)</li>
+        <li><strong>HWP 구형</strong>: 업로드 즉시 "HWP(구형)는 PDF 또는 HWPX로 변환 후 업로드해 주세요" 토스트 표시 → 수동 텍스트 입력 폼으로 fallback</li>
+        <li><strong>파일명 기반 문서 유형 분류</strong>: "과업" 포함 → 과업내용서, "공고" 포함 → 공고문, "배치" 포함 → 배치계획표, "평가기준" 포함 → 세부평가기준</li>
+      </ul>
+
+      <h5 style="margin:16px 0 8px; font-size:14px;">실제 과업지시서 정보 구조 (10건 공통 패턴)</h5>
+      <ul>
+        <li><strong>1.2 용역개요 테이블</strong> → <code>form_fields</code> 추출 대상: 용역명, 용역종류, 예정금액(원), 과업기간(월), 과업범위(공종 목록), 대상공사(연면적 ㎡ / 공사비 / 위치 / 구조 및 용도)</li>
+        <li><strong>2.4 과업수행범위 — 시공단계 업무 목록</strong> → <code>sections</code> 추출 대상: 공정관리, 품질관리, 안전관리, 환경관리, 설계변경 관리, 클레임관리, 기성·준공검사 등이 일반적으로 나열됨</li>
+        <li><strong>특수 요구사항 조항</strong> (BIM, 스마트건설, CPTED, 드론, 스마트CCTV 등) → Tier B 키워드 추출 대상. 보통 2~4섹션 이후 별도 조항으로 등장</li>
+      </ul>
+
+      <h5 style="margin:16px 0 8px; font-size:14px;">Pass 0 프롬프트 설계 포인트</h5>
+      <ul>
+        <li>과업지시서 전체 텍스트(~39,000자)를 Gemini 2.0 Flash 128k context에 통째로 전달 — 트리밍 불필요</li>
+        <li>복수 파일 업로드 시: 과업내용서 텍스트를 <code>[주 문서]</code>로, 나머지를 <code>[보조 문서]</code>로 구분하여 하나의 프롬프트에 결합</li>
+        <li><code>construction_type</code> 추출: 과업범위 공종 목록("건축·토목·조경") 또는 구조·용도("철근콘크리트/공공청사" → ["건축"])에서 파악</li>
+        <li><code>scale_area</code>: 연면적(㎡), <code>scale_amount</code>: 용역 예정금액(원) 우선, 없으면 공사비(원) 사용</li>
+        <li>Tier B 키워드는 사업 고유 기술·지역·공법 용어 추출 — "세종", "NATM", "연약지반", "행복주택", "전이층" 수준의 구체성 요구</li>
+      </ul>
+    </div>
+
+    <div class="resolved-q">
+      <h4>✅ Q6. PPTX → Illustrator 워크플로우 — 확장 방향 결정됨</h4>
       <ul>
         <li><strong>1차 목표 (MVP)</strong>: 아이템 배치 구성을 빠르게 결정해주는 <strong>"초안 설계 도구"</strong>. 레이아웃·아이템 배치를 AI가 자동으로 잡아주고 사용자가 검토·수정하는 구조</li>
         <li><strong>궁극 목표</strong>: 단순 배치 참고용을 넘어, <strong>Illustrator 작업량을 최소화하는 구조화된 출력물</strong> 제공. 텍스트·벡터·이미지를 분리하여 넘김으로써 AI에서 재제작 부담을 줄이는 것이 최종 지향점
@@ -1607,7 +1645,7 @@
 
 <footer>
   <div class="container">
-    제안서 초안 자동생성 시스템 MVP — PRD v0.7 &nbsp;|&nbsp; 2026-06-25<br>
+    제안서 초안 자동생성 시스템 MVP — PRD v0.8 &nbsp;|&nbsp; 2026-06-25<br>
     <span style="opacity:0.6;">미래사업팀 내부 검토용 문서</span>
   </div>
 </footer>
