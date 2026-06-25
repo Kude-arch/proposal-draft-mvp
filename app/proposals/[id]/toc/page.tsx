@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import StepNav from '@/components/StepNav'
+import type { SlideSize, SlidePreset } from '@/types'
 
 interface Section {
   id?: string
@@ -23,6 +24,7 @@ export default function TocPage({ params }: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [slideSize, setSlideSize] = useState<SlideSize>({ preset: 'A4L', width_mm: 297, height_mm: 210 })
   const [newTitle, setNewTitle] = useState('')
   const [aiSections, setAiSections] = useState<string[]>([])
 
@@ -33,6 +35,7 @@ export default function TocPage({ params }: Props) {
         fetch(`/api/proposals/${id}/sections`),
       ])
       const prop = await propRes.json()
+      if (prop.slide_size) setSlideSize(prop.slide_size)
       const secs = await secRes.json()
 
       // AI 추천 목차 (Pass0에서 추출)
@@ -92,6 +95,11 @@ export default function TocPage({ params }: Props) {
     setSaving(true)
     setSaveError('')
     try {
+      await fetch(`/api/proposals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slide_size: slideSize }),
+      })
       const res = await fetch(`/api/proposals/${id}/sections`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -245,6 +253,70 @@ export default function TocPage({ params }: Props) {
         >
           추가
         </button>
+      </div>
+
+      {/* 슬라이드 규격 선택 */}
+      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">슬라이드 규격</h2>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {([
+            { preset: 'A4P' as SlidePreset, label: 'A4 세로', width_mm: 210, height_mm: 297 },
+            { preset: 'A4L' as SlidePreset, label: 'A4 가로', width_mm: 297, height_mm: 210 },
+            { preset: 'A3P' as SlidePreset, label: 'A3 세로', width_mm: 297, height_mm: 420 },
+            { preset: 'A3L' as SlidePreset, label: 'A3 가로', width_mm: 420, height_mm: 297 },
+          ]).map(opt => (
+            <button
+              key={opt.preset}
+              onClick={() => setSlideSize({ preset: opt.preset, width_mm: opt.width_mm, height_mm: opt.height_mm })}
+              className={[
+                'px-3 py-1.5 rounded-lg text-sm border transition-colors',
+                slideSize.preset === opt.preset
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400',
+              ].join(' ')}
+            >
+              {opt.label}
+              <span className="ml-1 text-xs opacity-70">{opt.width_mm}×{opt.height_mm}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => setSlideSize(prev => ({ ...prev, preset: 'custom' }))}
+            className={[
+              'px-3 py-1.5 rounded-lg text-sm border transition-colors',
+              slideSize.preset === 'custom'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400',
+            ].join(' ')}
+          >
+            Custom
+          </button>
+        </div>
+        {slideSize.preset === 'custom' && (
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-gray-500">W (mm)</label>
+            <input
+              type="number"
+              min={100}
+              max={841}
+              value={slideSize.width_mm}
+              onChange={e => setSlideSize(prev => ({ ...prev, width_mm: Number(e.target.value) }))}
+              className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-center"
+            />
+            <span className="text-gray-400">×</span>
+            <label className="text-xs text-gray-500">H (mm)</label>
+            <input
+              type="number"
+              min={100}
+              max={1189}
+              value={slideSize.height_mm}
+              onChange={e => setSlideSize(prev => ({ ...prev, height_mm: Number(e.target.value) }))}
+              className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-center"
+            />
+          </div>
+        )}
+        <p className="mt-2 text-xs text-gray-400">
+          현재: {slideSize.width_mm}×{slideSize.height_mm}mm
+        </p>
       </div>
 
       {saveError && (
