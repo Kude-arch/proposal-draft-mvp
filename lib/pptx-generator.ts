@@ -8,42 +8,64 @@ function isSafeImageUrl(url: string): boolean {
   }
 }
 
+function mmToIn(mm: number): number {
+  return mm / 25.4
+}
+
+interface SlideSize {
+  preset: string
+  width_mm: number
+  height_mm: number
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer> {
   const pptx = new PptxGenJS()
-  pptx.layout = 'LAYOUT_WIDE' // 16:9 (13.33" x 7.5")
 
-  const SLIDE_W = 13.33
-  const SLIDE_H = 7.5
-  const HEADER_H = 0.9
-  const MARGIN = 0.3
+  const slideSize: SlideSize = proposal.slide_size ?? { preset: 'A4L', width_mm: 297, height_mm: 210 }
+  const SLIDE_W = mmToIn(slideSize.width_mm)
+  const SLIDE_H = mmToIn(slideSize.height_mm)
 
-  // Q1 FIX: 표지를 먼저 추가해야 첫 페이지가 됨
+  pptx.defineLayout({ name: 'CUSTOM', width: SLIDE_W, height: SLIDE_H })
+  pptx.layout = 'CUSTOM'
+
+  const HEADER_H = mmToIn(22)
+  const ACCENT_H = mmToIn(1)
+  const MARGIN_L = mmToIn(8)
+  const MARGIN_R = mmToIn(8)
+  const MARGIN_T = mmToIn(6)
+  const MARGIN_B = mmToIn(8)
+  const GUTTER_COL = mmToIn(4)
+  const GUTTER_ROW = mmToIn(4)
+
+  const CONTENT_W = SLIDE_W - MARGIN_L - MARGIN_R
+  const CONTENT_H = SLIDE_H - HEADER_H - ACCENT_H - MARGIN_T - MARGIN_B
+
+  // 표지
   const cover = pptx.addSlide()
   cover.addShape(pptx.ShapeType.rect, {
     x: 0, y: 0, w: SLIDE_W, h: SLIDE_H,
     fill: { color: '1E3A5F' },
     line: { color: '1E3A5F' },
   })
-  // 상단 악센트 바
   cover.addShape(pptx.ShapeType.rect, {
-    x: 0, y: 5.8, w: SLIDE_W, h: 0.08,
+    x: 0, y: SLIDE_H * 0.77, w: SLIDE_W, h: mmToIn(2),
     fill: { color: '4A90D9' },
     line: { color: '4A90D9' },
   })
   cover.addText(proposal.title ?? '제안서', {
-    x: 1.5, y: 1.8, w: SLIDE_W - 3, h: 1.4,
+    x: mmToIn(38), y: SLIDE_H * 0.24, w: SLIDE_W - mmToIn(76), h: mmToIn(35),
     fontSize: 34, bold: true, color: 'FFFFFF', align: 'center',
     fontFace: 'Malgun Gothic',
   })
   cover.addText('건설사업관리 용역 제안서', {
-    x: 1.5, y: 3.3, w: SLIDE_W - 3, h: 0.6,
+    x: mmToIn(38), y: SLIDE_H * 0.44, w: SLIDE_W - mmToIn(76), h: mmToIn(15),
     fontSize: 16, color: '88AACC', align: 'center',
     fontFace: 'Malgun Gothic',
   })
   if (proposal.client) {
     cover.addText(proposal.client, {
-      x: 1.5, y: 4.2, w: SLIDE_W - 3, h: 0.6,
+      x: mmToIn(38), y: SLIDE_H * 0.56, w: SLIDE_W - mmToIn(76), h: mmToIn(15),
       fontSize: 18, color: 'AACCEE', align: 'center',
       fontFace: 'Malgun Gothic',
     })
@@ -53,103 +75,103 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
   if (proposal.duration_months) metaParts.push(`과업기간 ${proposal.duration_months}개월`)
   if (metaParts.length > 0) {
     cover.addText(metaParts.join('  |  '), {
-      x: 1.5, y: 5.0, w: SLIDE_W - 3, h: 0.4,
+      x: mmToIn(38), y: SLIDE_H * 0.67, w: SLIDE_W - mmToIn(76), h: mmToIn(10),
       fontSize: 11, color: '6688AA', align: 'center',
       fontFace: 'Malgun Gothic',
     })
   }
 
-  // 표지를 제외한 실제 본문 쪽수
   const totalPages = slides.length
 
-  // 본문 슬라이드 (표지 다음부터, 쪽번호는 1~totalPages)
   for (const slide of slides) {
     const sl = pptx.addSlide()
+    const cols: number = slide.cols ?? 2
+    const rows: number = slide.rows ?? 1
 
-    // 헤더 배경
     sl.addShape(pptx.ShapeType.rect, {
       x: 0, y: 0, w: SLIDE_W, h: HEADER_H,
-      fill: { color: '1E3A5F' },
-      line: { color: '1E3A5F' },
+      fill: { color: '1E3A5F' }, line: { color: '1E3A5F' },
     })
-    // 헤더 하단 악센트
     sl.addShape(pptx.ShapeType.rect, {
-      x: 0, y: HEADER_H, w: SLIDE_W, h: 0.04,
-      fill: { color: '4A90D9' },
-      line: { color: '4A90D9' },
+      x: 0, y: HEADER_H, w: SLIDE_W, h: ACCENT_H,
+      fill: { color: '4A90D9' }, line: { color: '4A90D9' },
+    })
+    sl.addText(slide.slide_title ?? '', {
+      x: MARGIN_L, y: mmToIn(3), w: SLIDE_W - MARGIN_L - MARGIN_R - mmToIn(30), h: HEADER_H - mmToIn(6),
+      fontSize: 18, bold: true, color: 'FFFFFF',
+      fontFace: 'Malgun Gothic',
+    })
+    sl.addText(`${slide.slide_number} / ${totalPages}`, {
+      x: SLIDE_W - mmToIn(32), y: mmToIn(3), w: mmToIn(28), h: HEADER_H - mmToIn(6),
+      fontSize: 10, color: 'AACCEE', align: 'right',
+      fontFace: 'Malgun Gothic',
     })
 
-    sl.addText(slide.slide_title ?? '', {
-      x: MARGIN, y: 0.1, w: SLIDE_W - MARGIN * 2 - 1.2, h: 0.7,
-      fontSize: 20, bold: true, color: 'FFFFFF',
-      fontFace: 'Malgun Gothic',
-    })
-    // 쪽번호: "1 / 20" 형식, 표지 제외 카운트
-    sl.addText(`${slide.slide_number} / ${totalPages}`, {
-      x: SLIDE_W - 1.5, y: 0.1, w: 1.2, h: 0.7,
-      fontSize: 11, color: 'AACCEE', align: 'right',
-      fontFace: 'Malgun Gothic',
-    })
+    const cellUnitW = (CONTENT_W - GUTTER_COL * (cols - 1)) / cols
+    const cellUnitH = (CONTENT_H - GUTTER_ROW * (rows - 1)) / rows
+    const contentStartY = HEADER_H + ACCENT_H + MARGIN_T
 
     const cells = (slide.cells ?? []).sort(
       (a: { cell_index: number }, b: { cell_index: number }) => a.cell_index - b.cell_index
     )
-    const cellCount = cells.length || 2
-    const cellW = (SLIDE_W - MARGIN * (cellCount + 1)) / cellCount
-    const cellH = SLIDE_H - HEADER_H - MARGIN * 2 - 0.04
-    const cellY = HEADER_H + MARGIN + 0.04
 
-    for (let ci = 0; ci < cellCount; ci++) {
-      const cell = cells[ci] ?? {}
-      const cellX = MARGIN + ci * (cellW + MARGIN)
+    for (const cell of cells) {
+      const colStart: number = cell.col_start ?? 1
+      const rowStart: number = cell.row_start ?? 1
+      const colSpan: number = cell.col_span ?? 1
+      const rowSpan: number = cell.row_span ?? 1
+
+      const cellX = MARGIN_L + (colStart - 1) * (cellUnitW + GUTTER_COL)
+      const cellY = contentStartY + (rowStart - 1) * (cellUnitH + GUTTER_ROW)
+      const cellW = cellUnitW * colSpan + GUTTER_COL * (colSpan - 1)
+      const cellH = cellUnitH * rowSpan + GUTTER_ROW * (rowSpan - 1)
 
       sl.addShape(pptx.ShapeType.rect, {
         x: cellX, y: cellY, w: cellW, h: cellH,
-        fill: { color: 'F5F7FA' },
-        line: { color: 'D0D9E8', pt: 1 },
+        fill: { color: 'F5F7FA' }, line: { color: 'D0D9E8', pt: 1 },
       })
 
       if (cell.image_url && isSafeImageUrl(cell.image_url)) {
-        const imgH = cellH * 0.72
+        const imgH = cellH * 0.75
         try {
           sl.addImage({
             path: cell.image_url,
-            x: cellX + 0.06, y: cellY + 0.06,
-            w: cellW - 0.12, h: imgH - 0.12,
-            sizing: { type: 'contain', w: cellW - 0.12, h: imgH - 0.12 },
+            x: cellX + mmToIn(1.5), y: cellY + mmToIn(1.5),
+            w: cellW - mmToIn(3), h: imgH - mmToIn(3),
+            sizing: { type: 'contain', w: cellW - mmToIn(3), h: imgH - mmToIn(3) },
           })
         } catch {
           sl.addShape(pptx.ShapeType.rect, {
-            x: cellX + 0.06, y: cellY + 0.06,
-            w: cellW - 0.12, h: imgH - 0.12,
-            fill: { color: 'E0E7EF' },
-            line: { color: 'B0BCCC' },
+            x: cellX + mmToIn(1.5), y: cellY + mmToIn(1.5),
+            w: cellW - mmToIn(3), h: imgH - mmToIn(3),
+            fill: { color: 'E0E7EF' }, line: { color: 'B0BCCC' },
           })
           sl.addText('이미지 로드 실패', {
-            x: cellX + 0.06, y: cellY + imgH * 0.4,
-            w: cellW - 0.12, h: 0.4,
+            x: cellX + mmToIn(1.5), y: cellY + imgH * 0.4,
+            w: cellW - mmToIn(3), h: mmToIn(10),
             align: 'center', fontSize: 9, color: 'AAAAAA',
             fontFace: 'Malgun Gothic',
           })
         }
 
-        const titleY = cellY + imgH + 0.08
-        const titleH = cellH - imgH - 0.1
+        const titleY = cellY + imgH + mmToIn(2)
+        const titleH = cellH - imgH - mmToIn(2)
         sl.addText(cell.item_title ?? '', {
-          x: cellX + 0.1, y: titleY, w: cellW - 0.2, h: titleH,
-          fontSize: 9, color: '2C3E50', wrap: true,
+          x: cellX + mmToIn(2.5), y: titleY,
+          w: cellW - mmToIn(5), h: Math.max(titleH, mmToIn(5)),
+          fontSize: 8, color: '2C3E50', wrap: true,
           fontFace: 'Malgun Gothic', valign: 'top',
         })
       } else {
         sl.addShape(pptx.ShapeType.rect, {
-          x: cellX + 0.06, y: cellY + 0.06,
-          w: cellW - 0.12, h: cellH - 0.12,
+          x: cellX + mmToIn(1.5), y: cellY + mmToIn(1.5),
+          w: cellW - mmToIn(3), h: cellH - mmToIn(3),
           fill: { color: 'EEF1F5' },
           line: { color: 'C5CDD9', pt: 1, dashType: 'dash' },
         })
         sl.addText('아이템 미배정', {
-          x: cellX, y: cellY + cellH / 2 - 0.2,
-          w: cellW, h: 0.4,
+          x: cellX, y: cellY + cellH / 2 - mmToIn(5),
+          w: cellW, h: mmToIn(10),
           align: 'center', fontSize: 11, color: 'AABBCC',
           fontFace: 'Malgun Gothic',
         })
