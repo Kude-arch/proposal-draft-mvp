@@ -46,16 +46,24 @@ export async function POST(req: NextRequest) {
   const pass0Prompt = buildPass0Prompt(docTexts, drawingMemo)
 
   let result: Pass0Result
-  if (pdfUris.length > 0) {
-    // 모든 PDF를 Gemini에 전달 (multi-file content)
-    const extraText = docTexts.map(d => `${d.label}\n${d.text}`).join('\n\n')
-    const promptWithExtra = extraText ? `${pass0Prompt}\n\n[추가 문서]\n${extraText}` : pass0Prompt
-    result = await generateJsonWithFiles<Pass0Result>(
-      pdfUris.map(p => ({ uri: p.uri, mimeType: 'application/pdf' })),
-      promptWithExtra
+  try {
+    if (pdfUris.length > 0) {
+      // 모든 PDF를 Gemini에 전달 (multi-file content)
+      const extraText = docTexts.map(d => `${d.label}\n${d.text}`).join('\n\n')
+      const promptWithExtra = extraText ? `${pass0Prompt}\n\n[추가 문서]\n${extraText}` : pass0Prompt
+      result = await generateJsonWithFiles<Pass0Result>(
+        pdfUris.map(p => ({ uri: p.uri, mimeType: 'application/pdf' })),
+        promptWithExtra
+      )
+    } else {
+      result = await generateJson<Pass0Result>(pass0Prompt)
+    }
+  } catch (e) {
+    console.error('RFP 파싱 실패:', e)
+    return Response.json(
+      { error: e instanceof Error ? e.message : 'AI 파싱 중 오류가 발생했습니다' },
+      { status: 500 }
     )
-  } else {
-    result = await generateJson<Pass0Result>(pass0Prompt)
   }
 
   return Response.json(result)

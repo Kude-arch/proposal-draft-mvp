@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { randomUUID } from 'crypto'
 import { createServerClient } from '@/lib/supabase'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (deleteError) return Response.json({ error: deleteError.message }, { status: 500 })
   if (body.length > 0) {
     const rows = body.map((s, i) => ({
-      id: s.id?.startsWith('new-') ? undefined : s.id,
+      id: (s.id && !s.id.startsWith('new-')) ? s.id : randomUUID(),
       proposal_id: id,
       title: s.title,
       order_index: i,

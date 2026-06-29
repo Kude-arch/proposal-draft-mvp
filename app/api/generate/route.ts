@@ -8,6 +8,24 @@ interface CandidateItem {
   id: string
   title: string
   image_url: string | null
+  section_big: string | null
+  section_small: string | null
+  keywords: Array<{ type: string; value: string }>
+  score: number
+}
+
+function scoreCandidate(item: Omit<CandidateItem, 'score'>, keywords: string[]): number {
+  let score = 0
+  const title = item.title.toLowerCase()
+  const allKwValues = (item.keywords ?? []).map(k => k.value.toLowerCase())
+  const customKwValues = (item.keywords ?? []).filter(k => k.type === 'custom').map(k => k.value.toLowerCase())
+  for (const kw of keywords) {
+    const kl = kw.toLowerCase()
+    if (title.includes(kl)) score += 40
+    if (customKwValues.some(v => v.includes(kl) || kl.includes(v))) score += 30
+    if (allKwValues.some(v => v.includes(kl) || kl.includes(v))) score += 20
+  }
+  return score
 }
 
 export async function POST(req: NextRequest) {
@@ -64,14 +82,21 @@ export async function POST(req: NextRequest) {
         .join(',')
       const { data: items } = await sb
         .from('proposal_items')
-        .select('id, title, image_url, content_text')
+        .select('id, title, image_url, section_big, section_small, keywords')
         .or(conditions)
-        .limit(fetchLimit)
-      candidates = (items ?? []).map((it: { id: string; title: string; image_url: string | null }) => ({
-        id: it.id,
-        title: it.title,
-        image_url: it.image_url,
+        .limit(fetchLimit * 3)
+      const raw = (items ?? []) as Array<{
+        id: string; title: string; image_url: string | null
+        section_big: string | null; section_small: string | null
+        keywords: Array<{ type: string; value: string }> | null
+      }>
+      const scored = raw.map(it => ({
+        ...it,
+        keywords: it.keywords ?? [],
+        score: scoreCandidate(it as Omit<CandidateItem, 'score'>, tierBKeywords),
       }))
+      scored.sort((a, b) => b.score - a.score)
+      candidates = scored.slice(0, fetchLimit)
     }
     sectionCandidates.set(section.id, candidates)
   }
@@ -88,7 +113,10 @@ export async function POST(req: NextRequest) {
       const slideCount = (section as { slide_count?: number }).slide_count ?? plan?.slide_count_suggestion ?? 2
 
       const candidateList = candidates
-        .map((c, i) => `  [${i}] id="${c.id}" title="${c.title}"`)
+        .map((c, i) => {
+          const kwStr = (c.keywords ?? []).slice(0, 5).map(k => k.value).join(', ')
+          return `  [${i}] id="${c.id}" title="${c.title}" 분류="${c.section_big ?? ''}" 키워드=[${kwStr}] 관련도=${c.score}`
+        })
         .join('\n')
 
       return `## 섹션: "${section.title}"

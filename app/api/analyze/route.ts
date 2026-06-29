@@ -78,7 +78,16 @@ ${sectionTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 총 목차 슬라이드 합계가 ${proposal.ai_analysis?.target_slides ?? 20}페이지에 맞도록 배분하세요.
 모든 목차 섹션에 대해 section_plans 항목을 생성하세요 (${sectionTitles.length}개).`
 
-  const result = await generateJson<Pass1Result>(prompt)
+  let result: Pass1Result
+  try {
+    result = await generateJson<Pass1Result>(prompt)
+  } catch (e) {
+    console.error('AI 분석 실패:', e)
+    return Response.json(
+      { error: e instanceof Error ? e.message : 'AI 분석 중 오류가 발생했습니다' },
+      { status: 500 }
+    )
+  }
 
   // DB 저장
   const updatedAnalysis = {

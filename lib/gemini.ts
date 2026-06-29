@@ -9,7 +9,7 @@ const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY!)
 
 export function getModel(jsonMode = true) {
   return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     generationConfig: jsonMode
       ? { responseMimeType: 'application/json' }
       : undefined,
@@ -30,11 +30,20 @@ export async function uploadPdfToGemini(buffer: Buffer, filename: string): Promi
   }
 }
 
+function parseJsonResponse<T>(text: string): T {
+  if (!text?.trim()) throw new Error('Gemini 응답이 비어 있습니다')
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    console.error('Gemini JSON 파싱 실패. 원본 응답 앞 500자:', text.slice(0, 500))
+    throw new Error('Gemini 응답을 JSON으로 파싱할 수 없습니다')
+  }
+}
+
 export async function generateJson<T>(prompt: string): Promise<T> {
   const model = getModel(true)
   const result = await model.generateContent(prompt)
-  const text = result.response.text()
-  return JSON.parse(text) as T
+  return parseJsonResponse<T>(result.response.text())
 }
 
 export async function generateJsonWithFile<T>(
@@ -47,7 +56,7 @@ export async function generateJsonWithFile<T>(
     { fileData: { mimeType, fileUri } },
     { text: prompt },
   ])
-  return JSON.parse(result.response.text()) as T
+  return parseJsonResponse<T>(result.response.text())
 }
 
 export async function generateJsonWithFiles<T>(
@@ -59,5 +68,5 @@ export async function generateJsonWithFiles<T>(
     ...files.map(f => ({ fileData: { mimeType: f.mimeType, fileUri: f.uri } })),
     { text: prompt },
   ])
-  return JSON.parse(result.response.text()) as T
+  return parseJsonResponse<T>(result.response.text())
 }

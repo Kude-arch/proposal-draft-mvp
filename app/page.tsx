@@ -13,18 +13,32 @@ export default async function Home() {
     .order('updated_at', { ascending: false })
 
   return (
+    <div>
+    <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3">
+      <a href="/" className="text-blue-600 font-bold text-lg">제안서 자동생성</a>
+      <span className="text-gray-300">|</span>
+      <span className="text-gray-500 text-sm">미래사업팀</span>
+    </header>
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">제안서 목록</h1>
           <p className="text-gray-500 text-sm mt-1">작성 중인 제안서를 이어서 작업하거나 새로 시작합니다</p>
         </div>
-        <Link
-          href="/proposals/new"
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          + 새 제안서
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            href="/items"
+            className="bg-white text-gray-700 border border-gray-300 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+          >
+            아이템 DB
+          </Link>
+          <Link
+            href="/proposals/new"
+            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            + 새 제안서
+          </Link>
+        </div>
       </div>
 
       {!proposals || proposals.length === 0 ? (
@@ -46,6 +60,7 @@ export default async function Home() {
           ))}
         </div>
       )}
+    </div>
     </div>
   )
 }

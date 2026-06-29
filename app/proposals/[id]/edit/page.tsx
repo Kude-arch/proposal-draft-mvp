@@ -17,29 +17,52 @@ export default function EditPage({ params }: Props) {
   const [slides, setSlides] = useState<(ProposalSlide & { cells: SlideCell[] })[]>([])
   const [sectionKeywords, setSectionKeywords] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
+  const [regenerating, setRegenerating] = useState(false)
 
   const loadSlides = useCallback(async () => {
-    const [slidesRes, sectionsRes] = await Promise.all([
-      fetch(`/api/proposals/${id}/slides`),
-      fetch(`/api/proposals/${id}/sections`),
-    ])
-    const slidesData = await slidesRes.json()
-    const sectionsData = await sectionsRes.json()
+    try {
+      const [slidesRes, sectionsRes] = await Promise.all([
+        fetch(`/api/proposals/${id}/slides`),
+        fetch(`/api/proposals/${id}/sections`),
+      ])
+      const slidesData = await slidesRes.json()
+      const sectionsData = await sectionsRes.json()
 
-    setSlides(slidesData ?? [])
+      setSlides(Array.isArray(slidesData) ? slidesData : [])
 
-    // 섹션 키워드 매핑
-    const kwMap: Record<string, string[]> = {}
-    for (const sec of sectionsData ?? []) {
-      kwMap[sec.id] = sec.search_keywords ?? []
+      // 섹션 키워드 매핑
+      const kwMap: Record<string, string[]> = {}
+      for (const sec of (Array.isArray(sectionsData) ? sectionsData : [])) {
+        kwMap[sec.id] = sec.search_keywords ?? []
+      }
+      setSectionKeywords(kwMap)
+    } catch (e) {
+      console.error('슬라이드 로드 실패:', e)
+    } finally {
+      setLoading(false)
     }
-    setSectionKeywords(kwMap)
-    setLoading(false)
   }, [id])
 
   useEffect(() => {
     loadSlides()
   }, [loadSlides])
+
+  async function handleRegenerate() {
+    setRegenerating(true)
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposal_id: id }),
+      })
+      if (!res.ok) throw new Error('재생성 실패')
+      await loadSlides()
+    } catch (e) {
+      console.error('재생성 실패:', e)
+    } finally {
+      setRegenerating(false)
+    }
+  }
 
   function handleSlideUpdate(updatedSlide: ProposalSlide & { cells: SlideCell[] }) {
     setSlides(prev => prev.map(s => s.id === updatedSlide.id ? updatedSlide : s))
@@ -104,10 +127,11 @@ export default function EditPage({ params }: Props) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => router.push(`/proposals/${id}/generate`)}
-              className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
             >
-              재생성
+              {regenerating ? '재생성 중...' : '재생성'}
             </button>
             <button
               onClick={() => router.push(`/proposals/${id}/export`)}
