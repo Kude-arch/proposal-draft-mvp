@@ -150,73 +150,66 @@ export default function ItemsPage() {
 
   // ── Search View ──────────────────────────────────────────────────────────
   if (view === 'search') return (
-    <div className="min-h-screen bg-gray-50">
-    <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3">
-      <a href="/" className="text-blue-600 font-bold text-base">제안서 자동생성</a>
-      <span className="text-sm font-black text-blue-600">📁 제안서 DB</span>
-    </div>
-    <div className="flex flex-col items-center justify-center px-6 py-12">
-      <div className="text-2xl font-black text-blue-600 tracking-tight mb-1">📁 제안서 DB</div>
-      <div className="text-sm text-gray-500 mb-8">건설사업관리용역 제안서 구성요소를 키워드로 검색합니다</div>
-      <div className="flex gap-2 w-full max-w-lg">
-        <input
-          className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500 bg-white"
-          placeholder="키워드 입력 (예: BIM, 공정관리, 안전)"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()}
-        />
+    <div className="flex flex-col min-h-full">
+      <div className="sticky top-0 z-10 bg-[#F7F8FA] border-b border-[#F0F0EF] px-8 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-sm font-semibold text-gray-900">아이템 DB</h1>
+          <p className="text-xs text-gray-400 mt-0.5">건설사업관리용역 제안서 구성요소를 키워드로 검색합니다</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center px-6 py-12 flex-1">
+        <div className="flex gap-2 w-full max-w-lg">
+          <input
+            className="flex-1 border-2 border-[#F0F0EF] rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-400 bg-white"
+            placeholder="키워드 입력 (예: BIM, 공정관리, 안전)"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-[#2563EB] text-white rounded-xl px-6 py-3 text-sm font-medium hover:bg-blue-700 transition-colors"
+          >검색</button>
+        </div>
+        <div className="text-xs text-gray-400 mt-5 mb-2">데이터 기반 주요 키워드</div>
+        <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
+          {HINTS.map(h => (
+            <button key={h}
+              onClick={() => setQuery(h)}
+              className="bg-white border border-[#F0F0EF] rounded-full px-3 py-1 text-xs text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            >{h}</button>
+          ))}
+        </div>
         <button
-          onClick={handleSearch}
-          className="bg-blue-600 text-white rounded-xl px-6 py-3 text-sm font-bold hover:bg-blue-700"
-        >검색</button>
+          onClick={handleShowAll}
+          className="mt-7 border-2 border-[#F0F0EF] rounded-xl px-10 py-2.5 text-sm font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+        >전체 이미지 보기</button>
       </div>
-      <div className="text-xs text-gray-400 mt-5 mb-2">데이터 기반 주요 키워드</div>
-      <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
-        {HINTS.map(h => (
-          <button key={h}
-            onClick={() => { setQuery(h); }}
-            className="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50"
-          >{h}</button>
-        ))}
-      </div>
-      <button
-        onClick={handleShowAll}
-        className="mt-7 border-2 border-gray-200 rounded-xl px-10 py-2.5 text-sm font-semibold text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50"
-      >전체 이미지 보기</button>
-    </div>
     </div>
   )
 
   // ── List View ────────────────────────────────────────────────────────────
   if (view === 'list') return (
-    <div className="min-h-screen bg-gray-50">
-      {/* topbar */}
-      <div className="bg-white border-b border-gray-200 px-6 h-13 flex items-center gap-3 sticky top-0 z-20">
-        <a href="/" className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">← 홈</a>
-        <button onClick={() => setView('search')} className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">검색</button>
-        <span className="text-sm font-black text-blue-600">📁 제안서 DB</span>
+    <div className="flex flex-col min-h-full">
+      <div className="sticky top-0 z-10 bg-[#F7F8FA] border-b border-[#F0F0EF] px-8 py-3 flex items-center gap-3">
+        <button onClick={() => setView('search')} className="border border-[#F0F0EF] bg-white rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors">← 검색</button>
+        <span className="text-sm font-semibold text-gray-700">{listLabel}</span>
+        <span className="text-xs text-gray-400 ml-auto">{loading ? '불러오는 중...' : `총 ${total.toLocaleString()}개`}</span>
       </div>
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        {/* header */}
-        <div className="mb-4">
-          <div className="text-lg font-black text-gray-800">{listLabel}</div>
-          <div className="text-xs text-gray-400 mt-0.5">{loading ? '불러오는 중...' : `총 ${total.toLocaleString()}개`}</div>
-        </div>
-
+      <div className="max-w-6xl mx-auto px-8 py-6 w-full">
         {/* 프로젝트 필터 (전체 모드일 때만) */}
         {isAllMode && groups.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             <button
               onClick={() => handleSourceFilter('')}
               className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors whitespace-nowrap
-                ${sourceFilter === '' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600'}`}
+                ${sourceFilter === '' ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-[#F0F0EF] text-gray-500 hover:border-blue-400 hover:text-blue-600'}`}
             >전체 ({groups.reduce((s, g) => s + g.count, 0).toLocaleString()})</button>
             {groups.map(g => (
               <button key={g.name}
                 onClick={() => handleSourceFilter(g.name)}
                 className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors whitespace-nowrap
-                  ${sourceFilter === g.name ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600'}`}
+                  ${sourceFilter === g.name ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-[#F0F0EF] text-gray-500 hover:border-blue-400 hover:text-blue-600'}`}
               >{g.name} ({g.count})</button>
             ))}
           </div>
@@ -228,7 +221,7 @@ export default function ItemsPage() {
             <button key={val}
               onClick={() => handleStatusFilter(val)}
               className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors
-                ${statusFilter === val ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600'}`}
+                ${statusFilter === val ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-[#F0F0EF] text-gray-500 hover:border-blue-400 hover:text-blue-600'}`}
             >{label}</button>
           ))}
         </div>
@@ -254,10 +247,10 @@ export default function ItemsPage() {
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-8">
             <button disabled={page <= 1} onClick={() => handlePageChange(page - 1)}
-              className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50">← 이전</button>
+              className="px-3 py-1.5 text-xs border border-[#F0F0EF] bg-white rounded-lg disabled:opacity-40 hover:bg-gray-50">← 이전</button>
             <span className="text-xs text-gray-500">{page} / {totalPages}</span>
             <button disabled={page >= totalPages} onClick={() => handlePageChange(page + 1)}
-              className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50">다음 →</button>
+              className="px-3 py-1.5 text-xs border border-[#F0F0EF] bg-white rounded-lg disabled:opacity-40 hover:bg-gray-50">다음 →</button>
           </div>
         )}
       </div>
@@ -266,11 +259,9 @@ export default function ItemsPage() {
 
   // ── Detail View ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 h-13 flex items-center gap-3 sticky top-0 z-20">
-        <a href="/" className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">← 홈</a>
-        <button onClick={() => setView('list')} className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">← 목록</button>
-        <span className="text-sm font-black text-blue-600">📁 제안서 DB</span>
+    <div className="flex flex-col min-h-full">
+      <div className="sticky top-0 z-10 bg-[#F7F8FA] border-b border-[#F0F0EF] px-8 py-3 flex items-center gap-3">
+        <button onClick={() => setView('list')} className="border border-[#F0F0EF] bg-white rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors">← 목록</button>
         <span className="text-sm font-semibold text-gray-700 truncate">{selected?.title}</span>
       </div>
       {selected && (
@@ -296,15 +287,15 @@ function ItemCard({ item, onClick }: { item: Item; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all"
+      className="bg-white border border-[#F0F0EF] rounded-xl overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
     >
       {item.image_url ? (
         <img src={item.image_url} alt={item.title} className="w-full aspect-[16/10] object-cover block" />
       ) : (
-        <div className="w-full aspect-[16/10] bg-gray-100 flex items-center justify-center text-gray-300 text-xs">이미지 없음</div>
+        <div className="w-full aspect-[16/10] bg-gray-50 flex items-center justify-center text-gray-300 text-xs">이미지 없음</div>
       )}
       <div className="p-3">
-        <div className="text-sm font-bold text-gray-800 mb-0.5 leading-snug">{item.title}</div>
+        <div className="text-sm font-semibold text-gray-800 mb-0.5 leading-snug">{item.title}</div>
         <div className="text-xs text-gray-400 mb-2 truncate">
           {item.source_proposal && <span className="font-medium text-gray-500">{item.source_proposal} · </span>}
           {[item.section_big, item.section_small].filter(Boolean).join(' > ') || '분류 없음'}
@@ -314,7 +305,7 @@ function ItemCard({ item, onClick }: { item: Item; onClick: () => void }) {
           {extra > 0 && <span className="text-xs text-gray-400">+{extra}</span>}
         </div>
         {item.keyword_status === 'ai_generated' && (
-          <div className="mt-2 inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-bold">
+          <div className="mt-2 inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-medium">
             ⚠ 검토 필요
           </div>
         )}
@@ -383,15 +374,15 @@ function DetailView({ item, onUpdate, showToast }: {
   const removeKw = (v: string) => setDraftKws(prev => prev.filter(k => k.value !== v))
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-6">
+    <div className="max-w-2xl mx-auto px-8 py-6">
       {/* meta */}
       <div className="text-xs text-gray-400 mb-1">
         {[item.source_proposal, item.section_big, item.section_small].filter(Boolean).join('  ·  ')}
       </div>
-      <div className="text-xl font-black text-gray-900 mb-4 leading-snug">{item.title}</div>
+      <div className="text-xl font-bold text-gray-900 mb-4 leading-snug">{item.title}</div>
 
       {/* 이미지 */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
+      <div className="bg-white border border-[#F0F0EF] rounded-xl overflow-hidden mb-4">
         {item.image_url ? (
           <img src={item.image_url} alt={item.title} className="w-full block" />
         ) : (
@@ -403,7 +394,7 @@ function DetailView({ item, onUpdate, showToast }: {
       {item.image_url && (
         <div className="flex gap-2 mb-5">
           <a href={item.image_url} download target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+            className="flex items-center gap-1.5 border border-[#F0F0EF] bg-white rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
             ⬇ 이미지 다운로드
           </a>
         </div>
@@ -412,21 +403,21 @@ function DetailView({ item, onUpdate, showToast }: {
       {/* 분류 정보 */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">분류 정보</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">분류 정보</span>
           {!editingCls && (
             <button onClick={() => setEditingCls(true)}
-              className="text-xs border border-gray-200 rounded-md px-2 py-0.5 text-gray-400 hover:bg-gray-50">편집</button>
+              className="text-xs border border-[#F0F0EF] rounded-md px-2 py-0.5 text-gray-400 hover:bg-gray-50">편집</button>
           )}
         </div>
         {editingCls ? (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <div className="text-sm font-bold text-amber-800 mb-3">분류 편집</div>
+            <div className="text-sm font-semibold text-amber-800 mb-3">분류 편집</div>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {([['title','아이템 이름'],['section_big','큰목차'],['section_small','작은목차']] as const).map(([key, label]) => (
                 <div key={key} className={key === 'title' ? 'col-span-2' : ''}>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">{label}</label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">{label}</label>
                   <input
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white"
+                    className="w-full border border-[#F0F0EF] rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 bg-white"
                     value={clsForm[key]}
                     onChange={e => setClsForm(prev => ({ ...prev, [key]: e.target.value }))}
                   />
@@ -435,18 +426,18 @@ function DetailView({ item, onUpdate, showToast }: {
             </div>
             <div className="flex gap-2">
               <button onClick={saveClassification} disabled={saving}
-                className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-bold hover:bg-blue-700 disabled:opacity-50">
+                className="flex-1 bg-[#2563EB] text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
                 {saving ? '저장 중...' : '저장'}
               </button>
               <button onClick={() => setEditingCls(false)}
-                className="px-4 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50">취소</button>
+                className="px-4 border border-[#F0F0EF] rounded-lg text-sm text-gray-500 hover:bg-gray-50">취소</button>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">
             {([['프로젝트', item.source_proposal],['아이템 이름', item.title],['큰목차', item.section_big],['작은목차', item.section_small]] as const).map(([label, val]) => (
-              <div key={label} className={`bg-gray-50 rounded-lg border border-gray-100 p-3 ${label === '아이템 이름' || label === '프로젝트' ? 'col-span-2' : ''}`}>
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</div>
+              <div key={label} className={`bg-white rounded-lg border border-[#F0F0EF] p-3 ${label === '아이템 이름' || label === '프로젝트' ? 'col-span-2' : ''}`}>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{label}</div>
                 <div className={`text-sm ${val ? 'text-gray-800' : 'text-gray-300 italic'}`}>{val || '—'}</div>
               </div>
             ))}
@@ -457,21 +448,21 @@ function DetailView({ item, onUpdate, showToast }: {
       {/* 키워드 검토 패널 */}
       {item.keyword_status === 'ai_generated' && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
-          <div className="text-sm font-bold text-amber-800 mb-1">⚠ 키워드 검토 필요</div>
+          <div className="text-sm font-semibold text-amber-800 mb-1">⚠ 키워드 검토 필요</div>
           <div className="text-xs text-amber-700 mb-4">AI가 자동 추출한 키워드입니다. 불필요한 키워드를 삭제하고 필요한 키워드를 추가한 후 검토 완료를 눌러주세요.</div>
           {/* 현재 키워드 */}
           <div className="mb-3">
-            <div className="text-xs font-bold text-gray-500 uppercase mb-2">현재 키워드 (✕ 클릭으로 삭제)</div>
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-2">현재 키워드 (✕ 클릭으로 삭제)</div>
             <div className="flex flex-wrap gap-1.5">
               {draftKws.map(k => <KwChip key={k.value} kw={k} onDelete={() => removeKw(k.value)} />)}
             </div>
           </div>
           {/* Taxonomy 추가 */}
           <div className="mb-3">
-            <div className="text-xs font-bold text-gray-500 uppercase mb-2">Taxonomy에서 추가</div>
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Taxonomy에서 추가</div>
+            <div className="bg-white border border-[#F0F0EF] rounded-lg overflow-hidden">
               <input
-                className="w-full border-b border-gray-200 px-3 py-2 text-sm outline-none"
+                className="w-full border-b border-[#F0F0EF] px-3 py-2 text-sm outline-none"
                 placeholder="키워드 검색…"
                 value={taxSearch}
                 onChange={e => setTaxSearch(e.target.value)}
@@ -479,7 +470,7 @@ function DetailView({ item, onUpdate, showToast }: {
               <div className="flex flex-wrap gap-1.5 p-2.5 max-h-36 overflow-y-auto">
                 {filteredTax.slice(0, 60).map(v => (
                   <button key={v} onClick={() => addTax(v)}
-                    className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5 text-xs hover:bg-blue-100">
+                    className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5 text-xs hover:bg-blue-100 transition-colors">
                     {v}
                   </button>
                 ))}
@@ -488,23 +479,23 @@ function DetailView({ item, onUpdate, showToast }: {
           </div>
           {/* Custom 추가 */}
           <div className="mb-4">
-            <div className="text-xs font-bold text-gray-500 uppercase mb-2">Custom 추가 키워드</div>
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Custom 추가 키워드</div>
             <div className="flex gap-2">
               <input
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500 bg-white"
+                className="flex-1 border border-[#F0F0EF] rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-400 bg-white"
                 placeholder="Taxonomy에 없는 키워드 입력"
                 value={cusInput}
                 onChange={e => setCusInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addCustom()}
               />
               <button onClick={addCustom}
-                className="bg-teal-50 text-teal-700 border border-teal-200 rounded-lg px-3 py-2 text-sm font-bold hover:bg-teal-100">
+                className="bg-teal-50 text-teal-700 border border-teal-200 rounded-lg px-3 py-2 text-sm font-medium hover:bg-teal-100 transition-colors">
                 + 추가
               </button>
             </div>
           </div>
           <button onClick={saveKeywords} disabled={saving}
-            className="w-full bg-blue-600 text-white rounded-lg py-2.5 text-sm font-bold hover:bg-blue-700 disabled:opacity-50">
+            className="w-full bg-[#2563EB] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
             {saving ? '저장 중...' : '검토 완료 →'}
           </button>
         </div>
@@ -512,7 +503,7 @@ function DetailView({ item, onUpdate, showToast }: {
 
       {/* 전체 키워드 */}
       <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">키워드</div>
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">키워드</div>
         <div className="flex flex-wrap gap-1.5">
           {(item.keyword_status === 'ai_generated' ? draftKws : item.keywords).map((k, i) => (
             <KwChip key={i} kw={k} />
