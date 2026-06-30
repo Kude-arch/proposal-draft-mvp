@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, use, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import StepNav from '@/components/StepNav'
 import SlideGrid from '@/components/SlideGrid'
-import type { ProposalSlide, SlideCell, ProposalItem } from '@/types'
+import type { ProposalSlide, SlideCell, ProposalItem, SlideGeneration } from '@/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -13,24 +13,34 @@ interface Props {
 export default function EditPage({ params }: Props) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const genParam = searchParams.get('gen')
 
+  const [generations, setGenerations] = useState<SlideGeneration[]>([])
+  const [selectedGenId, setSelectedGenId] = useState<string | null>(genParam)
   const [slides, setSlides] = useState<(ProposalSlide & { cells: SlideCell[] })[]>([])
   const [sectionKeywords, setSectionKeywords] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
-  const [regenerating, setRegenerating] = useState(false)
+  const [deletingGenId, setDeletingGenId] = useState<string | null>(null)
 
-  const loadSlides = useCallback(async () => {
+  const loadGenerations = useCallback(async () => {
+    const res = await fetch(`/api/proposals/${id}/generations`)
+    const data: SlideGeneration[] = await res.json()
+    setGenerations(data)
+    return data
+  }, [id])
+
+  const loadSlides = useCallback(async (genId: string | null) => {
+    setLoading(true)
     try {
+      const genQuery = genId ? `?gen=${genId}` : ''
       const [slidesRes, sectionsRes] = await Promise.all([
-        fetch(`/api/proposals/${id}/slides`),
+        fetch(`/api/proposals/${id}/slides${genQuery}`),
         fetch(`/api/proposals/${id}/sections`),
       ])
       const slidesData = await slidesRes.json()
       const sectionsData = await sectionsRes.json()
-
       setSlides(Array.isArray(slidesData) ? slidesData : [])
-
-      // 섹션 키워드 매핑
       const kwMap: Record<string, string[]> = {}
       for (const sec of (Array.isArray(sectionsData) ? sectionsData : [])) {
         kwMap[sec.id] = sec.search_keywords ?? []
@@ -43,25 +53,49 @@ export default function EditPage({ params }: Props) {
     }
   }, [id])
 
+  // 초기 로드: generations 먼저, 그 후 선택된 gen의 슬라이드
   useEffect(() => {
-    loadSlides()
-  }, [loadSlides])
+    loadGenerations().then(gens => {
+      if (gens.length === 0) {
+        setLoading(false)
+        return
+      }
+      // URL gen 파라미터가 유효하면 사용, 없으면 최신(마지막) gen 선택
+      const validGen = genParam && gens.find(g => g.id === genParam) ? genParam : gens[gens.length - 1].id
+      setSelectedGenId(validGen)
+      loadSlides(validGen)
+      // URL에 gen 파라미터 반영
+      if (validGen !== genParam) {
+        router.replace(`/proposals/${id}/edit?gen=${validGen}`)
+      }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleRegenerate() {
-    setRegenerating(true)
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposal_id: id }),
-      })
-      if (!res.ok) throw new Error('재생성 실패')
-      await loadSlides()
-    } catch (e) {
-      console.error('재생성 실패:', e)
-    } finally {
-      setRegenerating(false)
+  function switchGen(genId: string) {
+    setSelectedGenId(genId)
+    router.replace(`/proposals/${id}/edit?gen=${genId}`)
+    loadSlides(genId)
+  }
+
+  async function handleDeleteGen(genId: string, genNumber: number) {
+    if (!confirm(`${genNumber}안을 삭제하시겠습니까? 해당 안의 슬라이드가 모두 삭제됩니다.`)) return
+    setDeletingGenId(genId)
+    const res = await fetch(`/api/proposals/${id}/generations/${genId}`, { method: 'DELETE' })
+    if (res.ok) {
+      const newGens = generations.filter(g => g.id !== genId)
+      setGenerations(newGens)
+      if (selectedGenId === genId) {
+        if (newGens.length > 0) {
+          const nextGen = newGens[newGens.length - 1]
+          switchGen(nextGen.id)
+        } else {
+          setSelectedGenId(null)
+          setSlides([])
+          router.replace(`/proposals/${id}/edit`)
+        }
+      }
     }
+    setDeletingGenId(null)
   }
 
   function handleSlideUpdate(updatedSlide: ProposalSlide & { cells: SlideCell[] }) {
@@ -79,7 +113,6 @@ export default function EditPage({ params }: Props) {
       }),
     })
     if (res.ok) {
-      // 해당 슬라이드의 셀 업데이트
       setSlides(prev =>
         prev.map(slide => {
           if (slide.id !== slideId) return slide
@@ -109,15 +142,56 @@ export default function EditPage({ params }: Props) {
     { label: 'PPTX 내보내기', href: `/proposals/${id}/export`, status: 'pending' as const },
   ]
 
+  const atLimit = generations.length >= 10
+
   if (loading)
-    return (
-      <div className="p-8 text-gray-400">슬라이드 불러오는 중...</div>
-    )
+    return <div className="p-8 text-gray-400">슬라이드 불러오는 중...</div>
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <div className="px-4 pt-4 pb-2 border-b border-gray-200 flex-shrink-0">
         <StepNav steps={steps} />
+
+        {/* 안 탭 */}
+        {generations.length > 0 && (
+          <div className="flex items-center gap-1 mb-2 flex-wrap">
+            {generations.map(gen => {
+              const isSelected = gen.id === selectedGenId
+              const isDeleting = deletingGenId === gen.id
+              return (
+                <div
+                  key={gen.id}
+                  className={`flex items-center rounded-md border text-xs transition-colors ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-blue-300'
+                  }`}
+                >
+                  <button
+                    onClick={() => switchGen(gen.id)}
+                    className={`px-2.5 py-1 font-medium ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}
+                  >
+                    {gen.gen_number}안
+                  </button>
+                  <button
+                    onClick={() => handleDeleteGen(gen.id, gen.gen_number)}
+                    disabled={isDeleting}
+                    className="pr-1.5 text-gray-300 hover:text-red-400 transition-colors disabled:opacity-50"
+                    title={`${gen.gen_number}안 삭제`}
+                  >
+                    ×
+                  </button>
+                </div>
+              )
+            })}
+            {atLimit && (
+              <span className="text-xs text-amber-600 ml-2">
+                최대 10개 도달 — 기존 안을 삭제해야 새로 생성할 수 있습니다
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-800">슬라이드 편집</h1>
@@ -127,14 +201,18 @@ export default function EditPage({ params }: Props) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+              onClick={() => router.push(`/proposals/${id}/generate`)}
+              disabled={atLimit}
+              className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={atLimit ? '최대 10개 도달 — 기존 안 삭제 후 생성 가능' : '새 안 생성'}
             >
-              {regenerating ? '재생성 중...' : '재생성'}
+              재생성
             </button>
             <button
-              onClick={() => router.push(`/proposals/${id}/export`)}
+              onClick={() => {
+                const genQuery = selectedGenId ? `?gen=${selectedGenId}` : ''
+                router.push(`/proposals/${id}/export${genQuery}`)
+              }}
               className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
             >
               PPTX 내보내기 →
