@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import StepNav from '@/components/StepNav'
+import type { SlideGeneration } from '@/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -11,27 +12,40 @@ interface Props {
 export default function ExportPage({ params }: Props) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const genParam = searchParams.get('gen')
 
   const [proposal, setProposal] = useState<Record<string, unknown>>({})
   const [slideCount, setSlideCount] = useState(0)
+  const [currentGen, setCurrentGen] = useState<SlideGeneration | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
 
   useEffect(() => {
     async function load() {
-      const [propRes, slidesRes] = await Promise.all([
+      const genQuery = genParam ? `?gen=${genParam}` : ''
+      const [propRes, slidesRes, gensRes] = await Promise.all([
         fetch(`/api/proposals/${id}`),
-        fetch(`/api/proposals/${id}/slides`),
+        fetch(`/api/proposals/${id}/slides${genQuery}`),
+        fetch(`/api/proposals/${id}/generations`),
       ])
       const prop = await propRes.json()
       const sls = await slidesRes.json()
+      const gens: SlideGeneration[] = await gensRes.json()
+
       setProposal(prop)
       setSlideCount((sls ?? []).length)
+
+      if (genParam) {
+        setCurrentGen(gens.find(g => g.id === genParam) ?? null)
+      } else if (gens.length > 0) {
+        setCurrentGen(gens[gens.length - 1])
+      }
       setLoading(false)
     }
     load()
-  }, [id])
+  }, [id, genParam])
 
   async function handleExport() {
     setExporting(true)
@@ -40,7 +54,10 @@ export default function ExportPage({ params }: Props) {
       const res = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposal_id: id }),
+        body: JSON.stringify({
+          proposal_id: id,
+          generation_id: currentGen?.id ?? null,
+        }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -80,12 +97,18 @@ export default function ExportPage({ params }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <StepNav steps={steps} />
 
-      <h1 className="text-xl font-bold text-gray-800 mb-2">PPTX 내보내기</h1>
+      <div className="flex items-center gap-3 mb-2">
+        <h1 className="text-xl font-bold text-gray-800">PPTX 내보내기</h1>
+        {currentGen && (
+          <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+            {currentGen.gen_number}안
+          </span>
+        )}
+      </div>
       <p className="text-sm text-gray-500 mb-8">
         완성된 슬라이드를 PPTX 파일로 내보냅니다.
       </p>
 
-      {/* 요약 카드 */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="border border-gray-200 rounded-lg p-4 text-center bg-white">
           <p className="text-2xl font-bold text-blue-600">{slideCount}</p>
@@ -105,7 +128,6 @@ export default function ExportPage({ params }: Props) {
         </div>
       </div>
 
-      {/* 제안서 정보 */}
       <div className="border border-gray-200 rounded-lg p-4 mb-8 bg-gray-50 space-y-2">
         <div className="flex gap-2">
           <span className="text-xs text-gray-500 w-20">용역명</span>
@@ -137,7 +159,10 @@ export default function ExportPage({ params }: Props) {
 
       <div className="flex gap-3">
         <button
-          onClick={() => router.push(`/proposals/${id}/edit`)}
+          onClick={() => {
+            const genQuery = currentGen ? `?gen=${currentGen.id}` : ''
+            router.push(`/proposals/${id}/edit${genQuery}`)
+          }}
           className="px-4 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
         >
           ← 편집으로 돌아가기
@@ -153,7 +178,7 @@ export default function ExportPage({ params }: Props) {
               PPTX 생성 중...
             </>
           ) : (
-            '📥 PPTX 다운로드'
+            `📥 ${currentGen ? `${currentGen.gen_number}안 ` : ''}PPTX 다운로드`
           )}
         </button>
       </div>
@@ -161,10 +186,7 @@ export default function ExportPage({ params }: Props) {
       {slideCount === 0 && (
         <p className="text-xs text-amber-600 mt-2 text-center">
           슬라이드가 없습니다.{' '}
-          <a
-            href={`/proposals/${id}/generate`}
-            className="underline"
-          >
+          <a href={`/proposals/${id}/generate`} className="underline">
             AI 생성 먼저 실행
           </a>
           하세요.
