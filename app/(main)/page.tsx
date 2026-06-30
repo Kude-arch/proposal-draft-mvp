@@ -131,20 +131,45 @@ function ProposalCard({ proposal: p, generations }: { proposal: Proposal; genera
             </div>
           )}
           {/* 안(案) 선택 배지 */}
-          {generations.length > 0 && (
-            <div className="flex items-center gap-1 mt-2 flex-wrap">
-              <span className="text-xs text-gray-400 mr-0.5">안 선택:</span>
-              {generations.map(gen => (
+          <div className="flex items-center gap-1 mt-2 flex-wrap">
+            {generations.length > 0 ? (
+              <>
+                <span className="text-xs text-gray-400 mr-0.5">안 선택:</span>
+                {generations.map((gen, idx) => {
+                  const isLatest = idx === generations.length - 1
+                  return (
+                    <Link
+                      key={gen.id}
+                      href={`/proposals/${p.id}/edit?gen=${gen.id}`}
+                      title={isLatest ? '최근 작업 안' : undefined}
+                      className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                        isLatest
+                          ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                          : 'border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50'
+                      }`}
+                    >
+                      {gen.gen_number}안
+                    </Link>
+                  )
+                })}
                 <Link
-                  key={gen.id}
-                  href={`/proposals/${p.id}/edit?gen=${gen.id}`}
-                  className="text-xs px-2 py-0.5 rounded border border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  href={`/proposals/${p.id}/generate`}
+                  className="text-xs px-2 py-0.5 rounded border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
                 >
-                  {gen.gen_number}안
+                  + 새 안
                 </Link>
-              ))}
-            </div>
-          )}
+              </>
+            ) : (
+              p.status !== 'draft' && (
+                <Link
+                  href={`/proposals/${p.id}/generate`}
+                  className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
+                >
+                  → AI 슬라이드 생성하기
+                </Link>
+              )
+            )}
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
           <Link
