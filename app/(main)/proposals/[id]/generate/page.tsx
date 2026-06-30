@@ -131,11 +131,15 @@ export default function GeneratePage({ params }: Props) {
       <p className="text-sm text-gray-500 mb-2">
         RFP 분석 결과를 바탕으로 DB에서 적합한 아이템을 검색하고 슬라이드를 구성합니다.
       </p>
-      {genCount !== null && genCount > 0 && (
-        <p className="text-xs text-gray-400 mb-6">
-          현재 {genCount}안 생성됨{atLimit ? ' — 최대 10개 도달' : ` (최대 ${10 - genCount}개 더 생성 가능)`}
-        </p>
-      )}
+      <p className="text-xs text-gray-500 mb-6">
+        {genCount === null
+          ? '안(案) 현황 불러오는 중...'
+          : genCount === 0
+          ? '아직 생성된 안이 없습니다 (최대 10개 생성 가능)'
+          : atLimit
+          ? `현재 ${genCount}개 안 생성됨 — 최대 10개 도달 (편집 페이지에서 삭제 후 추가 생성 가능)`
+          : `현재 ${genCount}개 안 생성됨 (${10 - genCount}개 더 생성 가능)`}
+      </p>
 
       {atLimit && (
         <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
