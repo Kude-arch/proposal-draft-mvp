@@ -53,25 +53,28 @@ export default function InfoPage({ params }: Props) {
 
   // 통합 파일 목록
   const [allFiles, setAllFiles] = useState<File[]>([])
+  const [genCount, setGenCount] = useState<number>(0)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch(`/api/proposals/${id}`)
-      .then(r => r.json())
-      .then(data => {
-        setProposal(data)
-        setTitle(data.title ?? '')
-        setClient(data.client ?? '')
-        setLocation(data.location ?? '')
-        setConstructionType(data.construction_type ?? [])
-        setScaleAmount(data.scale_amount ? String(data.scale_amount) : '')
-        setDurationMonths(data.duration_months ? String(data.duration_months) : '')
-        setSpecialConditions(data.special_conditions ?? '')
-        setDrawingMemo(data.drawing_review_raw ?? '')
-        setLoading(false)
-      })
+    Promise.all([
+      fetch(`/api/proposals/${id}`).then(r => r.json()),
+      fetch(`/api/proposals/${id}/generations`).then(r => r.json()).catch(() => []),
+    ]).then(([data, gens]) => {
+      setProposal(data)
+      setTitle(data.title ?? '')
+      setClient(data.client ?? '')
+      setLocation(data.location ?? '')
+      setConstructionType(data.construction_type ?? [])
+      setScaleAmount(data.scale_amount ? String(data.scale_amount) : '')
+      setDurationMonths(data.duration_months ? String(data.duration_months) : '')
+      setSpecialConditions(data.special_conditions ?? '')
+      setDrawingMemo(data.drawing_review_raw ?? '')
+      setGenCount(Array.isArray(gens) ? gens.length : 0)
+      setLoading(false)
+    })
   }, [id])
 
   const addFiles = useCallback((incoming: File[]) => {
@@ -213,12 +216,14 @@ export default function InfoPage({ params }: Props) {
     }
   }
 
+  const s = (has: boolean) => (has ? 'done' as const : 'pending' as const)
+  const hasSlides = (genCount ?? 0) > 0
   const steps = [
     { label: '기본정보', href: `/proposals/${id}/info`, status: 'active' as const },
-    { label: '목차구성', href: `/proposals/${id}/toc`, status: 'pending' as const },
-    { label: 'AI 생성', href: `/proposals/${id}/generate`, status: 'pending' as const },
-    { label: '슬라이드 편집', href: `/proposals/${id}/edit`, status: 'pending' as const },
-    { label: 'PPTX 내보내기', href: `/proposals/${id}/export`, status: 'pending' as const },
+    { label: '목차구성', href: `/proposals/${id}/toc`, status: 'done' as const },
+    { label: 'AI 생성', href: `/proposals/${id}/generate`, status: s(hasSlides) },
+    { label: '슬라이드 편집', href: `/proposals/${id}/edit`, status: s(hasSlides) },
+    { label: 'PPTX 내보내기', href: `/proposals/${id}/export`, status: s(hasSlides) },
   ]
 
   if (loading) return <div className="p-8 text-gray-400">불러오는 중...</div>

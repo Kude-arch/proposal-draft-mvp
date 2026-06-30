@@ -13,6 +13,21 @@ export default async function Home() {
     .order('updated_at', { ascending: false })
 
   const all = (proposals ?? []) as Proposal[]
+
+  // 안(案) 목록을 한 번에 조회
+  const { data: allGenerations } = all.length
+    ? await sb
+        .from('slide_generations')
+        .select('id, proposal_id, gen_number')
+        .in('proposal_id', all.map(p => p.id))
+        .order('gen_number', { ascending: true })
+    : { data: [] }
+
+  const gensByProposal: Record<string, { id: string; gen_number: number }[]> = {}
+  for (const gen of allGenerations ?? []) {
+    if (!gensByProposal[gen.proposal_id]) gensByProposal[gen.proposal_id] = []
+    gensByProposal[gen.proposal_id].push(gen)
+  }
   const inProgress = all.filter(p => p.status !== 'exported').length
   const exported = all.filter(p => p.status === 'exported').length
 
@@ -55,7 +70,7 @@ export default async function Home() {
         ) : (
           <div className="grid gap-3">
             {all.map(p => (
-              <ProposalCard key={p.id} proposal={p} />
+              <ProposalCard key={p.id} proposal={p} generations={gensByProposal[p.id] ?? []} />
             ))}
           </div>
         )}
@@ -78,10 +93,14 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
   )
 }
 
-function ProposalCard({ proposal: p }: { proposal: Proposal }) {
+function ProposalCard({ proposal: p, generations }: { proposal: Proposal; generations: { id: string; gen_number: number }[] }) {
+  const latestGen = generations.length > 0 ? generations[generations.length - 1] : null
+  const hasSlides = generations.length > 0
+
   const stepHref =
     p.status === 'draft' ? `/proposals/${p.id}/info`
     : p.status === 'analyzing' ? `/proposals/${p.id}/generate`
+    : hasSlides ? `/proposals/${p.id}/edit?gen=${latestGen!.id}`
     : p.status === 'slides_ready' ? `/proposals/${p.id}/edit`
     : p.status === 'editing' ? `/proposals/${p.id}/edit`
     : `/proposals/${p.id}/export`
@@ -111,6 +130,21 @@ function ProposalCard({ proposal: p }: { proposal: Proposal }) {
               ))}
             </div>
           )}
+          {/* 안(案) 선택 배지 */}
+          {generations.length > 0 && (
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
+              <span className="text-xs text-gray-400 mr-0.5">안 선택:</span>
+              {generations.map(gen => (
+                <Link
+                  key={gen.id}
+                  href={`/proposals/${p.id}/edit?gen=${gen.id}`}
+                  className="text-xs px-2 py-0.5 rounded border border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                >
+                  {gen.gen_number}안
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
           <Link
@@ -121,7 +155,7 @@ function ProposalCard({ proposal: p }: { proposal: Proposal }) {
           </Link>
           {(p.status === 'editing' || p.status === 'exported') && (
             <Link
-              href={`/proposals/${p.id}/export`}
+              href={`/proposals/${p.id}/export${latestGen ? `?gen=${latestGen.id}` : ''}`}
               className="text-xs text-gray-400 hover:text-blue-600 transition-colors"
             >
               PPTX 다운로드

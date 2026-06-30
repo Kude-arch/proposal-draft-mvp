@@ -27,16 +27,20 @@ export default function TocPage({ params }: Props) {
   const [slideSize, setSlideSize] = useState<SlideSize>({ preset: 'A4L', width_mm: 297, height_mm: 210 })
   const [newTitle, setNewTitle] = useState('')
   const [aiSections, setAiSections] = useState<string[]>([])
+  const [genCount, setGenCount] = useState<number>(0)
 
   useEffect(() => {
     async function load() {
-      const [propRes, secRes] = await Promise.all([
+      const [propRes, secRes, genRes] = await Promise.all([
         fetch(`/api/proposals/${id}`),
         fetch(`/api/proposals/${id}/sections`),
+        fetch(`/api/proposals/${id}/generations`),
       ])
       const prop = await propRes.json()
       if (prop.slide_size) setSlideSize(prop.slide_size)
       const secs = await secRes.json()
+      const gens = await genRes.json().catch(() => [])
+      setGenCount(Array.isArray(gens) ? gens.length : 0)
 
       // AI 추천 목차 (Pass0에서 추출)
       const suggested = prop.ai_analysis?.sections ?? []
@@ -92,6 +96,12 @@ export default function TocPage({ params }: Props) {
 
   async function handleSave() {
     if (!sections.length) return
+    if (genCount > 0) {
+      const ok = confirm(
+        `이미 ${genCount}개의 안(案)이 생성되어 있습니다.\n목차를 변경하면 기존 슬라이드의 섹션 분류가 맞지 않을 수 있습니다.\n계속 저장하시겠습니까?`
+      )
+      if (!ok) return
+    }
     setSaving(true)
     setSaveError('')
     try {
@@ -117,12 +127,14 @@ export default function TocPage({ params }: Props) {
     }
   }
 
+  const s = (has: boolean) => (has ? 'done' as const : 'pending' as const)
+  const hasSlides = genCount > 0
   const steps = [
     { label: '기본정보', href: `/proposals/${id}/info`, status: 'done' as const },
     { label: '목차구성', href: `/proposals/${id}/toc`, status: 'active' as const },
-    { label: 'AI 생성', href: `/proposals/${id}/generate`, status: 'pending' as const },
-    { label: '슬라이드 편집', href: `/proposals/${id}/edit`, status: 'pending' as const },
-    { label: 'PPTX 내보내기', href: `/proposals/${id}/export`, status: 'pending' as const },
+    { label: 'AI 생성', href: `/proposals/${id}/generate`, status: s(hasSlides) },
+    { label: '슬라이드 편집', href: `/proposals/${id}/edit`, status: s(hasSlides) },
+    { label: 'PPTX 내보내기', href: `/proposals/${id}/export`, status: s(hasSlides) },
   ]
 
   if (loading) return <div className="p-8 text-gray-400">불러오는 중...</div>
