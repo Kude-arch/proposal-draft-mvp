@@ -42,6 +42,39 @@ export async function POST(req: NextRequest) {
     .single()
   if (!proposal) return Response.json({ error: 'proposal not found' }, { status: 404 })
 
+  // 10개 제한 체크
+  const { count } = await sb
+    .from('slide_generations')
+    .select('*', { count: 'exact', head: true })
+    .eq('proposal_id', proposal_id)
+  if ((count ?? 0) >= 10) {
+    return Response.json(
+      { error: '최대 10개까지 생성 가능합니다. 기존 안을 삭제한 후 다시 시도하세요.' },
+      { status: 400 }
+    )
+  }
+
+  // 새 generation 번호 결정
+  const { data: lastGen } = await sb
+    .from('slide_generations')
+    .select('gen_number')
+    .eq('proposal_id', proposal_id)
+    .order('gen_number', { ascending: false })
+    .limit(1)
+    .single()
+  const nextGenNumber = (lastGen?.gen_number ?? 0) + 1
+
+  // generation 레코드 생성
+  const { data: newGen, error: genError } = await sb
+    .from('slide_generations')
+    .insert({ proposal_id, gen_number: nextGenNumber })
+    .select()
+    .single()
+  if (genError || !newGen) {
+    return Response.json({ error: 'generation 생성 실패' }, { status: 500 })
+  }
+  const generationId = newGen.id
+
   const { data: sections } = await sb
     .from('proposal_sections')
     .select('*')
@@ -50,17 +83,6 @@ export async function POST(req: NextRequest) {
   if (!sections?.length) return Response.json({ error: 'sections not found' }, { status: 400 })
 
   const sectionPlans: SectionPlan[] = proposal.ai_analysis?.section_plans ?? []
-
-  // 기존 슬라이드/셀 삭제
-  const { data: oldSlides } = await sb
-    .from('proposal_slides')
-    .select('id')
-    .eq('proposal_id', proposal_id)
-  if (oldSlides?.length) {
-    const slideIds = oldSlides.map((s: { id: string }) => s.id)
-    await sb.from('slide_cells').delete().in('slide_id', slideIds)
-    await sb.from('proposal_slides').delete().eq('proposal_id', proposal_id)
-  }
 
   // ── Step 1: 섹션별 후보 아이템 수집 ──────────────────────────────
   const sectionCandidates: Map<string, CandidateItem[]> = new Map()
@@ -206,6 +228,7 @@ ${sectionBlocks}
         .insert({
           proposal_id,
           section_id: section.id,
+          generation_id: generationId,
           slide_number: slideNumber,
           order_index: globalSlideIndex,
           layout_type: layoutType,
@@ -288,5 +311,10 @@ ${sectionBlocks}
   }
 
   await sb.from('proposals').update({ status: 'slides_ready' }).eq('id', proposal_id)
-  return Response.json({ total_slides: globalSlideIndex, slides: allSlides })
+  return Response.json({
+    total_slides: globalSlideIndex,
+    slides: allSlides,
+    generation_id: generationId,
+    gen_number: nextGenNumber,
+  })
 }
