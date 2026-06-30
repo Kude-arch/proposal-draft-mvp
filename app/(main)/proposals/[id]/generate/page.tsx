@@ -55,6 +55,21 @@ export default function GeneratePage({ params }: Props) {
     setRunning(true)
     setError('')
 
+    // Re-fetch current count to avoid stale state
+    try {
+      const freshRes = await fetch(`/api/proposals/${id}/generations`)
+      const freshGens = await freshRes.json()
+      const freshCount = Array.isArray(freshGens) ? freshGens.length : genCount ?? 0
+      setGenCount(freshCount)
+      if (freshCount >= 10) {
+        setError('최대 10개까지 생성 가능합니다. 기존 안을 삭제한 후 다시 시도하세요.')
+        setRunning(false)
+        return
+      }
+    } catch {
+      // proceed with cached genCount if fetch fails
+    }
+
     try {
       setPhaseStatus(0, 'running')
       setPhaseStatus(1, 'running')

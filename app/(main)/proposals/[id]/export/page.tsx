@@ -21,6 +21,7 @@ export default function ExportPage({ params }: Props) {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
+  const [genNotFound, setGenNotFound] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -38,7 +39,9 @@ export default function ExportPage({ params }: Props) {
       setSlideCount((sls ?? []).length)
 
       if (genParam) {
-        setCurrentGen(gens.find(g => g.id === genParam) ?? null)
+        const matched = gens.find(g => g.id === genParam) ?? null
+        setCurrentGen(matched)
+        if (!matched) setGenNotFound(true)
       } else if (gens.length > 0) {
         setCurrentGen(gens[gens.length - 1])
       }
@@ -108,6 +111,12 @@ export default function ExportPage({ params }: Props) {
       <p className="text-sm text-gray-500 mb-8">
         완성된 슬라이드를 PPTX 파일로 내보냅니다.
       </p>
+
+      {genNotFound && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-600">
+          선택한 안을 찾을 수 없습니다. 최신 안으로 표시합니다.
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="border border-gray-200 rounded-lg p-4 text-center bg-white">

@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
   }
   const generationId = newGen.id
 
+  let insertionSucceeded = false
+  try {
+
   const { data: sections } = await sb
     .from('proposal_sections')
     .select('*')
@@ -311,10 +314,17 @@ ${sectionBlocks}
   }
 
   await sb.from('proposals').update({ status: 'slides_ready' }).eq('id', proposal_id)
+  insertionSucceeded = true
   return Response.json({
     total_slides: globalSlideIndex,
     slides: allSlides,
     generation_id: generationId,
     gen_number: nextGenNumber,
   })
+
+  } finally {
+    if (!insertionSucceeded) {
+      await sb.from('slide_generations').delete().eq('id', generationId)
+    }
+  }
 }

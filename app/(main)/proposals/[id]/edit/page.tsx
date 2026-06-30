@@ -55,6 +55,9 @@ export default function EditPage({ params }: Props) {
 
   // 초기 로드: generations 먼저, 그 후 선택된 gen의 슬라이드
   useEffect(() => {
+    // Mount-only: id is stable for the lifetime of this page instance.
+    // loadGenerations/loadSlides/genParam/router intentionally not in deps —
+    // this effect should only run once per page mount.
     loadGenerations().then(gens => {
       if (gens.length === 0) {
         setLoading(false)
@@ -69,12 +72,12 @@ export default function EditPage({ params }: Props) {
         router.replace(`/proposals/${id}/edit?gen=${validGen}`)
       }
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function switchGen(genId: string) {
+  async function switchGen(genId: string) {
     setSelectedGenId(genId)
     router.replace(`/proposals/${id}/edit?gen=${genId}`)
-    loadSlides(genId)
+    await loadSlides(genId)
   }
 
   async function handleDeleteGen(genId: string, genNumber: number) {
@@ -87,7 +90,7 @@ export default function EditPage({ params }: Props) {
       if (selectedGenId === genId) {
         if (newGens.length > 0) {
           const nextGen = newGens[newGens.length - 1]
-          switchGen(nextGen.id)
+          await switchGen(nextGen.id)
         } else {
           setSelectedGenId(null)
           setSlides([])
