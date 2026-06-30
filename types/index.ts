@@ -75,6 +75,7 @@ export interface ProposalSlide {
   id: string
   proposal_id: string
   section_id: string | null
+  generation_id: string
   slide_number: number
   order_index: number
   layout_type: string
@@ -181,4 +182,11 @@ export interface Pass2Slide {
     col_span: number
     row_span: number
   }>
+}
+
+export interface SlideGeneration {
+  id: string
+  proposal_id: string
+  gen_number: number
+  created_at: string
 }
