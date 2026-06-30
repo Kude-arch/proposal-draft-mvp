@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import StepNav from '@/components/StepNav'
 import CoveragePanel from '@/components/CoveragePanel'
@@ -29,12 +29,21 @@ export default function GeneratePage({ params }: Props) {
   ])
   const [running, setRunning] = useState(false)
   const [done, setDone] = useState(false)
+  const [newGenId, setNewGenId] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [genCount, setGenCount] = useState<number | null>(null)
   const [sectionPlans, setSectionPlans] = useState<Array<{
     section_title: string
     coverage_score?: number
     coverage_hint?: string | null
   }>>([])
+
+  useEffect(() => {
+    fetch(`/api/proposals/${id}/generations`)
+      .then(r => r.json())
+      .then((gens: unknown[]) => setGenCount(gens.length))
+      .catch(() => setGenCount(0))
+  }, [id])
 
   function setPhaseStatus(idx: number, status: PhaseStatus, detail?: string) {
     setPhases(prev =>
@@ -47,7 +56,6 @@ export default function GeneratePage({ params }: Props) {
     setError('')
 
     try {
-      // Phase 0: Analyze (Pass1)
       setPhaseStatus(0, 'running')
       setPhaseStatus(1, 'running')
       const analyzeRes = await fetch('/api/analyze', {
@@ -60,11 +68,9 @@ export default function GeneratePage({ params }: Props) {
 
       const plans = analyzeData.section_plans ?? []
       setSectionPlans(plans)
-
       setPhaseStatus(0, 'done', analyzeData.site_analysis?.summary ?? '')
       setPhaseStatus(1, 'done', `${plans.length}개 섹션 분석 완료`)
 
-      // Phase 2: Generate slides (Pass2)
       setPhaseStatus(2, 'running')
       const genRes = await fetch('/api/generate', {
         method: 'POST',
@@ -74,7 +80,9 @@ export default function GeneratePage({ params }: Props) {
       const genData = await genRes.json()
       if (!genRes.ok) throw new Error(genData.error ?? '슬라이드 생성 실패')
 
-      setPhaseStatus(2, 'done', `${genData.total_slides}개 슬라이드 생성 완료`)
+      setPhaseStatus(2, 'done', `${genData.total_slides}개 슬라이드 생성 완료 (${genData.gen_number}안)`)
+      setNewGenId(genData.generation_id)
+      setGenCount(prev => (prev ?? 0) + 1)
       setDone(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : '오류 발생')
@@ -83,6 +91,8 @@ export default function GeneratePage({ params }: Props) {
       setRunning(false)
     }
   }
+
+  const atLimit = genCount !== null && genCount >= 10
 
   const steps = [
     { label: '기본정보', href: `/proposals/${id}/info`, status: 'done' as const },
@@ -103,13 +113,29 @@ export default function GeneratePage({ params }: Props) {
       <StepNav steps={steps} />
 
       <h1 className="text-xl font-bold text-gray-800 mb-2">AI 슬라이드 생성</h1>
-      <p className="text-sm text-gray-500 mb-8">
+      <p className="text-sm text-gray-500 mb-2">
         RFP 분석 결과를 바탕으로 DB에서 적합한 아이템을 검색하고 슬라이드를 구성합니다.
       </p>
+      {genCount !== null && genCount > 0 && (
+        <p className="text-xs text-gray-400 mb-6">
+          현재 {genCount}안 생성됨{atLimit ? ' — 최대 10개 도달' : ` (최대 ${10 - genCount}개 더 생성 가능)`}
+        </p>
+      )}
+
+      {atLimit && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+          최대 10개까지 생성 가능합니다. 편집 페이지에서 기존 안을 삭제한 후 다시 시도하세요.
+          <button
+            onClick={() => router.push(`/proposals/${id}/edit`)}
+            className="ml-2 underline font-medium"
+          >
+            편집 페이지로 이동 →
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-6">
         <div className="flex-1">
-          {/* 단계 진행 표시 */}
           <div className="space-y-3 mb-8">
             {phases.map((phase, i) => (
               <div
@@ -138,17 +164,12 @@ export default function GeneratePage({ params }: Props) {
                   {phase.status === 'done' ? '✓' : phase.status === 'error' ? '✕' : i + 1}
                 </div>
                 <div>
-                  <p
-                    className={`text-sm font-semibold ${
-                      phase.status === 'running'
-                        ? 'text-blue-700'
-                        : phase.status === 'done'
-                        ? 'text-green-700'
-                        : phase.status === 'error'
-                        ? 'text-red-700'
-                        : 'text-gray-600'
-                    }`}
-                  >
+                  <p className={`text-sm font-semibold ${
+                    phase.status === 'running' ? 'text-blue-700'
+                    : phase.status === 'done' ? 'text-green-700'
+                    : phase.status === 'error' ? 'text-red-700'
+                    : 'text-gray-600'
+                  }`}>
                     {phase.label}
                     {phase.status === 'running' && (
                       <span className="ml-2 text-xs font-normal animate-pulse">처리 중...</span>
@@ -179,10 +200,10 @@ export default function GeneratePage({ params }: Props) {
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={running}
+                disabled={running || atLimit || genCount === null}
                 className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
               >
-                {running ? '생성 중... (30초~1분 소요)' : 'AI 슬라이드 생성 시작'}
+                {running ? '생성 중... (30초~1분 소요)' : atLimit ? '최대 개수 도달' : 'AI 슬라이드 생성 시작'}
               </button>
             </div>
           ) : (
@@ -193,13 +214,16 @@ export default function GeneratePage({ params }: Props) {
               <div className="flex gap-3">
                 <button
                   onClick={handleGenerate}
-                  disabled={running}
-                  className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                  disabled={running || atLimit}
+                  className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
                 >
                   재생성
                 </button>
                 <button
-                  onClick={() => router.push(`/proposals/${id}/edit`)}
+                  onClick={() => {
+                    const genQuery = newGenId ? `?gen=${newGenId}` : ''
+                    router.push(`/proposals/${id}/edit${genQuery}`)
+                  }}
                   className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
                 >
                   슬라이드 편집 →
@@ -209,7 +233,6 @@ export default function GeneratePage({ params }: Props) {
           )}
         </div>
 
-        {/* 커버리지 패널 */}
         <div className="w-56 flex-shrink-0">
           <CoveragePanel
             sourceStatus={sourceStatus}
