@@ -42,6 +42,7 @@ export default function SlideGrid({
   const [mergingSlide, setMergingSlide] = useState<string | null>(null)
   const [editingTitleSlideId, setEditingTitleSlideId] = useState<string | null>(null)
   const [titleDraft, setTitleDraft] = useState('')
+  const [slideError, setSlideError] = useState<{ slideId: string; message: string } | null>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   function getSelected(slideId: string): Set<string> {
@@ -132,7 +133,7 @@ export default function SlideGrid({
       setMergingSlide(null)
     } else {
       const err = await res.json()
-      alert(err.error ?? '병합 실패')
+      setSlideError({ slideId, message: err.error ?? '병합 실패' })
     }
   }
 
@@ -151,7 +152,7 @@ export default function SlideGrid({
       setMergingSlide(null)
     } else {
       const err = await res.json()
-      alert(err.error ?? '분할 실패')
+      setSlideError({ slideId, message: err.error ?? '분할 실패' })
     }
   }
 
@@ -206,6 +207,13 @@ export default function SlideGrid({
                       )}
                       <span className="text-slate-300 ml-1 flex-shrink-0">#{slide.slide_number}</span>
                     </div>
+
+                    {slideError?.slideId === slide.id && (
+                      <div className="bg-red-50 border-b border-red-100 px-2 py-1 flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-red-600">{slideError.message}</span>
+                        <button onClick={() => setSlideError(null)} className="text-red-400 hover:text-red-600 text-xs leading-none">×</button>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-1 px-1.5 py-1 bg-gray-50 border-b border-gray-100 flex-wrap">
                       <select

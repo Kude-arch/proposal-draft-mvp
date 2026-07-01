@@ -1,15 +1,20 @@
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { auth } from '@/auth'
+import { getSlideProposalAccess, accessDenied } from '@/lib/proposal-access'
 import { randomUUID } from 'crypto'
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ slideId: string }> }
 ) {
-  const { slideId } = await params
-  const { cell_id }: { cell_id: string } = await req.json()
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sb = createServerClient()
+  const { slideId } = await params
+  const { access, sb } = await getSlideProposalAccess(slideId, session.user.email)
+  if (!access) return accessDenied()
+
+  const { cell_id }: { cell_id: string } = await req.json()
 
   const { data: cell, error: fetchErr } = await sb
     .from('slide_cells')

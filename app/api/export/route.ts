@@ -1,21 +1,17 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@/auth'
-import { createServerClient } from '@/lib/supabase'
 import { generatePptx } from '@/lib/pptx-generator'
 import type { Proposal, ProposalSlide, SlideCell } from '@/types'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { proposal_id, generation_id } = await req.json()
-  const sb = createServerClient()
 
-  const { data: proposal } = await sb
-    .from('proposals')
-    .select('*')
-    .eq('id', proposal_id)
-    .single()
+  const { getProposalAccess, accessDenied } = await import('@/lib/proposal-access')
+  const { proposal, access, sb } = await getProposalAccess(proposal_id, session.user.email)
+  if (!access) return accessDenied()
   if (!proposal) return Response.json({ error: 'proposal not found' }, { status: 404 })
 
   // generation_id 지정 없으면 최신 generation 사용

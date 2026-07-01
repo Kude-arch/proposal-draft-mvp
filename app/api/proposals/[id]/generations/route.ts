@@ -1,12 +1,17 @@
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { auth } from '@/auth'
+import { getProposalAccess, accessDenied } from '@/lib/proposal-access'
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
-  const sb = createServerClient()
+  const { access, sb } = await getProposalAccess(id, session.user.email)
+  if (!access) return accessDenied()
 
   const { data, error } = await sb
     .from('slide_generations')

@@ -1,18 +1,24 @@
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { auth } from '@/auth'
+import { getSlideProposalAccess, accessDenied } from '@/lib/proposal-access'
 import { randomUUID } from 'crypto'
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ slideId: string }> }
 ) {
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { slideId } = await params
+  const { access, sb } = await getSlideProposalAccess(slideId, session.user.email)
+  if (!access) return accessDenied()
+
   const body = await req.json()
   const { cols, rows, slide_title } = body
 
   // slide_title만 수정하는 경우 — 셀 재생성 없이 제목만 업데이트
   if (slide_title !== undefined && cols === undefined && rows === undefined) {
-    const sb = createServerClient()
     const { data: slide } = await sb
       .from('proposal_slides')
       .update({ slide_title })
@@ -28,8 +34,6 @@ export async function PATCH(
   if (!Number.isInteger(rows) || rows < 1 || rows > 3) {
     return Response.json({ error: 'rows must be 1–3' }, { status: 400 })
   }
-
-  const sb = createServerClient()
 
   await sb.from('slide_cells').delete().eq('slide_id', slideId)
 

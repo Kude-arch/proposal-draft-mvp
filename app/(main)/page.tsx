@@ -12,11 +12,33 @@ export default async function Home() {
 
   const sb = createServerClient()
   const query = sb.from('proposals').select('*').order('updated_at', { ascending: false })
-  const { data: proposals } = userEmail
+  const { data: ownedProposals } = userEmail
     ? await query.or(`user_email.eq.${userEmail},user_email.is.null`)
     : await query.is('user_email', null)
 
-  const all = (proposals ?? []) as Proposal[]
+  // 멤버로 초대된 제안서도 포함
+  let memberProposals: Proposal[] = []
+  if (userEmail) {
+    const { data: memberRows } = await sb
+      .from('proposal_members')
+      .select('proposal_id')
+      .eq('user_email', userEmail)
+    const memberIds = (memberRows ?? []).map((r: { proposal_id: string }) => r.proposal_id)
+    if (memberIds.length > 0) {
+      const ownedIds = new Set((ownedProposals ?? []).map((p: Proposal) => p.id))
+      const newIds = memberIds.filter((id: string) => !ownedIds.has(id))
+      if (newIds.length > 0) {
+        const { data: mp } = await sb
+          .from('proposals')
+          .select('*')
+          .in('id', newIds)
+          .order('updated_at', { ascending: false })
+        memberProposals = (mp ?? []) as Proposal[]
+      }
+    }
+  }
+
+  const all = [...(ownedProposals ?? []), ...memberProposals] as Proposal[]
 
   // 안(案) 목록을 한 번에 조회
   const { data: allGenerations } = all.length

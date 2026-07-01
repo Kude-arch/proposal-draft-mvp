@@ -7,13 +7,35 @@ export async function GET() {
   if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sb = createServerClient()
-  const { data, error } = await sb
+
+  // 소유한 제안서
+  const { data: owned, error } = await sb
     .from('proposals')
     .select('*')
-    .eq('user_email', session.user.email)
+    .or(`user_email.eq.${session.user.email},user_email.is.null`)
     .order('updated_at', { ascending: false })
   if (error) return Response.json({ error: error.message }, { status: 500 })
-  return Response.json(data)
+
+  // 멤버로 초대된 제안서
+  const { data: memberRows } = await sb
+    .from('proposal_members')
+    .select('proposal_id')
+    .eq('user_email', session.user.email)
+  const memberIds = (memberRows ?? []).map((r: { proposal_id: string }) => r.proposal_id)
+  const ownedIds = new Set((owned ?? []).map((p: { id: string }) => p.id))
+  const newIds = memberIds.filter((id: string) => !ownedIds.has(id))
+
+  let memberProposals: unknown[] = []
+  if (newIds.length > 0) {
+    const { data: mp } = await sb
+      .from('proposals')
+      .select('*')
+      .in('id', newIds)
+      .order('updated_at', { ascending: false })
+    memberProposals = mp ?? []
+  }
+
+  return Response.json([...(owned ?? []), ...memberProposals])
 }
 
 export async function POST(req: NextRequest) {

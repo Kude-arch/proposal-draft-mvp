@@ -7,7 +7,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (session?.user?.email !== 'hoo000kr789@gmail.com') {
+  const ADMIN = process.env.ADMIN_EMAIL ?? ''
+  if (!ADMIN || session?.user?.email !== ADMIN) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 

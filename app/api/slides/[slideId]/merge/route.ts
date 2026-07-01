@@ -1,18 +1,23 @@
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { auth } from '@/auth'
+import { getSlideProposalAccess, accessDenied } from '@/lib/proposal-access'
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ slideId: string }> }
 ) {
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { slideId } = await params
+  const { access, sb } = await getSlideProposalAccess(slideId, session.user.email)
+  if (!access) return accessDenied()
+
   const { cell_ids }: { cell_ids: string[] } = await req.json()
 
   if (!Array.isArray(cell_ids) || cell_ids.length < 2) {
     return Response.json({ error: '병합하려면 2개 이상 셀 선택 필요' }, { status: 400 })
   }
-
-  const sb = createServerClient()
 
   const { data: cells, error: fetchErr } = await sb
     .from('slide_cells')

@@ -1,14 +1,18 @@
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { auth } from '@/auth'
+import { getProposalAccess, accessDenied } from '@/lib/proposal-access'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const genId = req.nextUrl.searchParams.get('gen')
-  const sb = createServerClient()
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { id } = await params
+  const { access, sb } = await getProposalAccess(id, session.user.email)
+  if (!access) return accessDenied()
+
+  const genId = req.nextUrl.searchParams.get('gen')
   let targetGenId = genId
 
-  // gen 파라미터 없으면 최신 generation 사용
   if (!targetGenId) {
     const { data: latestGen } = await sb
       .from('slide_generations')

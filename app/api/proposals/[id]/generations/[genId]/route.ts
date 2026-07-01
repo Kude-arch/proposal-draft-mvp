@@ -1,12 +1,18 @@
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { auth } from '@/auth'
+import { getProposalAccess, accessDenied, ownerRequired } from '@/lib/proposal-access'
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string; genId: string }> }
 ) {
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id, genId } = await params
-  const sb = createServerClient()
+  const { access, sb } = await getProposalAccess(id, session.user.email)
+  if (!access) return accessDenied()
+  if (access !== 'owner') return ownerRequired()
 
   // 해당 generation이 이 proposal에 속하는지 확인
   const { data: gen } = await sb

@@ -4,6 +4,7 @@ import { useState, useEffect, use, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import StepNav from '@/components/StepNav'
 import CoveragePanel from '@/components/CoveragePanel'
+import MembersPanel from '../MembersPanel'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -544,12 +545,13 @@ export default function InfoPage({ params }: Props) {
           </div>
         </div>
 
-        {/* 우측 커버리지 패널 */}
-        <div className="w-60 flex-shrink-0">
+        {/* 우측 패널 */}
+        <div className="w-60 flex-shrink-0 space-y-4">
           <CoveragePanel
             sourceStatus={sourceStatus}
             sectionPlans={sectionPlans}
           />
+          <MembersPanel proposalId={id} />
         </div>
       </div>
     </div>
