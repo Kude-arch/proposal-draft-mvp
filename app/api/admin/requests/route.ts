@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 
 export async function GET() {
   const session = await auth()
-  if (session?.user?.email !== process.env.ADMIN_EMAIL) {
+  if (!session?.user?.isAdmin) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 

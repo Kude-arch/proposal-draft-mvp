@@ -27,17 +27,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // user_id 또는 email로 허용 여부 확인
         const query = userId
-          ? sb.from('allowed_users').select('email').or(`email.eq.${token.email},user_id.eq.${userId}`)
-          : sb.from('allowed_users').select('email').eq('email', token.email)
+          ? sb.from('allowed_users').select('email, is_admin').or(`email.eq.${token.email},user_id.eq.${userId}`)
+          : sb.from('allowed_users').select('email, is_admin').eq('email', token.email)
 
         const { data } = await query.limit(1).single()
         token.isAllowed = !!data
+        token.isAdmin = !!(data as { is_admin?: boolean } | null)?.is_admin
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.isAllowed = token.isAllowed as boolean
+        session.user.isAdmin = token.isAdmin as boolean
       }
       return session
     },
