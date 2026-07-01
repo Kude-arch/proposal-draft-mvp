@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 import { parseHwpx } from '@/lib/parsers/hwpx'
 import { parseXlsx } from '@/lib/parsers/xlsx-parser'
 import { generateJson, generateJsonWithFiles, uploadPdfToGemini } from '@/lib/gemini'
@@ -6,6 +7,8 @@ import { detectDocType } from '@/lib/utils'
 import type { Pass0Result } from '@/types'
 
 export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
   const formData = await req.formData()
   const files = formData.getAll('files') as File[]
   const drawingMemo = (formData.get('drawing_memo') as string) || ''

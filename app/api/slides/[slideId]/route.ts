@@ -7,7 +7,20 @@ export async function PATCH(
   { params }: { params: Promise<{ slideId: string }> }
 ) {
   const { slideId } = await params
-  const { cols, rows } = await req.json()
+  const body = await req.json()
+  const { cols, rows, slide_title } = body
+
+  // slide_title만 수정하는 경우 — 셀 재생성 없이 제목만 업데이트
+  if (slide_title !== undefined && cols === undefined && rows === undefined) {
+    const sb = createServerClient()
+    const { data: slide } = await sb
+      .from('proposal_slides')
+      .update({ slide_title })
+      .eq('id', slideId)
+      .select('*, cells:slide_cells(*)')
+      .single()
+    return Response.json(slide)
+  }
 
   if (!Number.isInteger(cols) || cols < 1 || cols > 4) {
     return Response.json({ error: 'cols must be 1–4' }, { status: 400 })

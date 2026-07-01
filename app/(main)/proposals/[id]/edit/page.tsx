@@ -22,6 +22,7 @@ export default function EditPage({ params }: Props) {
   const [sectionKeywords, setSectionKeywords] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [deletingGenId, setDeletingGenId] = useState<string | null>(null)
+  const [cellError, setCellError] = useState('')
 
   const loadGenerations = useCallback(async () => {
     const res = await fetch(`/api/proposals/${id}/generations`)
@@ -106,6 +107,7 @@ export default function EditPage({ params }: Props) {
   }
 
   async function handleCellUpdate(slideId: string, cellId: string, item: ProposalItem | null) {
+    setCellError('')
     const res = await fetch(`/api/slides/${slideId}/cells/${cellId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -134,6 +136,9 @@ export default function EditPage({ params }: Props) {
           }
         })
       )
+    } else {
+      const errData = await res.json().catch(() => ({}))
+      setCellError(errData.error ?? '아이템 저장 실패 — 다시 시도하세요')
     }
   }
 
@@ -223,6 +228,13 @@ export default function EditPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {cellError && (
+        <div className="mx-4 mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-center justify-between flex-shrink-0">
+          <span>{cellError}</span>
+          <button onClick={() => setCellError('')} className="ml-2 text-red-400 hover:text-red-600">×</button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-hidden px-4 py-3">
         {slides.length === 0 ? (

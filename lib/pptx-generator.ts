@@ -1,4 +1,5 @@
 import PptxGenJS from 'pptxgenjs'
+import type { Proposal, ProposalSlide, SlideCell } from '@/types'
 
 function isSafeImageUrl(url: string): boolean {
   try {
@@ -24,31 +25,28 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   }
 }
 
-interface SlideSize {
-  preset: string
-  width_mm: number
-  height_mm: number
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer> {
+export async function generatePptx(
+  proposal: Proposal,
+  slides: (ProposalSlide & { cells: SlideCell[] })[]
+): Promise<Buffer> {
   const pptx = new PptxGenJS()
 
-  const slideSize: SlideSize = proposal.slide_size ?? { preset: 'A4L', width_mm: 297, height_mm: 210 }
+  const slideSize = proposal.slide_size ?? { preset: 'A4L', width_mm: 297, height_mm: 210 }
   const SLIDE_W = mmToIn(slideSize.width_mm)
   const SLIDE_H = mmToIn(slideSize.height_mm)
 
   pptx.defineLayout({ name: 'CUSTOM', width: SLIDE_W, height: SLIDE_H })
   pptx.layout = 'CUSTOM'
 
+  const margins = proposal.slide_margins
   const HEADER_H = mmToIn(22)
   const ACCENT_H = mmToIn(1)
-  const MARGIN_L = mmToIn(8)
-  const MARGIN_R = mmToIn(8)
-  const MARGIN_T = mmToIn(6)
-  const MARGIN_B = mmToIn(8)
-  const GUTTER_COL = mmToIn(4)
-  const GUTTER_ROW = mmToIn(4)
+  const MARGIN_L = mmToIn(margins?.left_mm ?? 8)
+  const MARGIN_R = mmToIn(margins?.right_mm ?? 8)
+  const MARGIN_T = mmToIn(margins?.top_mm ?? 6)
+  const MARGIN_B = mmToIn(margins?.bottom_mm ?? 8)
+  const GUTTER_COL = mmToIn(margins?.gutter_col_mm ?? 4)
+  const GUTTER_ROW = mmToIn(margins?.gutter_row_mm ?? 4)
 
   const CONTENT_W = SLIDE_W - MARGIN_L - MARGIN_R
   const CONTENT_H = SLIDE_H - HEADER_H - ACCENT_H - MARGIN_T - MARGIN_B
@@ -139,9 +137,7 @@ export async function generatePptx(proposal: any, slides: any[]): Promise<Buffer
     const cellUnitH = (CONTENT_H - GUTTER_ROW * (rows - 1)) / rows
     const contentStartY = HEADER_H + ACCENT_H + MARGIN_T
 
-    const cells = (slide.cells ?? []).sort(
-      (a: { cell_index: number }, b: { cell_index: number }) => a.cell_index - b.cell_index
-    )
+    const cells = (slide.cells ?? []).sort((a, b) => a.cell_index - b.cell_index)
 
     for (const cell of cells) {
       const colStart: number = cell.col_start ?? 1

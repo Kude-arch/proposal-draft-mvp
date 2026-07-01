@@ -1,16 +1,20 @@
 import Link from 'next/link'
+import { auth } from '@/auth'
 import { createServerClient } from '@/lib/supabase'
-import { statusLabel, statusColor, formatAmount } from '@/lib/utils'
 import type { Proposal } from '@/types'
+import ProposalCard from './ProposalCard'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
+  const session = await auth()
+  const userEmail = session?.user?.email ?? null
+
   const sb = createServerClient()
-  const { data: proposals } = await sb
-    .from('proposals')
-    .select('*')
-    .order('updated_at', { ascending: false })
+  const query = sb.from('proposals').select('*').order('updated_at', { ascending: false })
+  const { data: proposals } = userEmail
+    ? await query.or(`user_email.eq.${userEmail},user_email.is.null`)
+    : await query.is('user_email', null)
 
   const all = (proposals ?? []) as Proposal[]
 
@@ -93,104 +97,3 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
   )
 }
 
-function ProposalCard({ proposal: p, generations }: { proposal: Proposal; generations: { id: string; gen_number: number }[] }) {
-  const latestGen = generations.length > 0 ? generations[generations.length - 1] : null
-  const hasSlides = generations.length > 0
-
-  const stepHref =
-    p.status === 'draft' ? `/proposals/${p.id}/info`
-    : p.status === 'analyzing' ? `/proposals/${p.id}/generate`
-    : hasSlides ? `/proposals/${p.id}/edit?gen=${latestGen!.id}`
-    : p.status === 'slides_ready' ? `/proposals/${p.id}/edit`
-    : p.status === 'editing' ? `/proposals/${p.id}/edit`
-    : `/proposals/${p.id}/export`
-
-  return (
-    <div className="bg-white border border-[#F0F0EF] rounded-xl p-5 hover:border-blue-200 hover:shadow-sm transition-all">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-1">
-            <h2 className="font-semibold text-gray-900 text-sm truncate">{p.title}</h2>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColor(p.status)}`}>
-              {statusLabel(p.status)}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-3 text-xs text-gray-400">
-            {p.client && <span>{p.client}</span>}
-            {p.location && <span>📍 {p.location}</span>}
-            {p.scale_amount && <span>💰 {formatAmount(p.scale_amount)}</span>}
-            {p.duration_months && <span>📅 {p.duration_months}개월</span>}
-          </div>
-          {p.construction_type?.length > 0 && (
-            <div className="flex gap-1 mt-2">
-              {p.construction_type.map((ct: string) => (
-                <span key={ct} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
-                  {ct}
-                </span>
-              ))}
-            </div>
-          )}
-          {/* 안(案) 선택 배지 */}
-          <div className="flex items-center gap-1 mt-2 flex-wrap">
-            {generations.length > 0 ? (
-              <>
-                <span className="text-xs text-gray-400 mr-0.5">안 선택:</span>
-                {generations.map((gen, idx) => {
-                  const isLatest = idx === generations.length - 1
-                  return (
-                    <Link
-                      key={gen.id}
-                      href={`/proposals/${p.id}/edit?gen=${gen.id}`}
-                      title={isLatest ? '최근 작업 안' : undefined}
-                      className={`text-xs px-2 py-0.5 rounded border transition-colors ${
-                        isLatest
-                          ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
-                          : 'border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
-                    >
-                      {gen.gen_number}안
-                    </Link>
-                  )
-                })}
-                <Link
-                  href={`/proposals/${p.id}/generate`}
-                  className="text-xs px-2 py-0.5 rounded border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                >
-                  + 새 안
-                </Link>
-              </>
-            ) : (
-              p.status !== 'draft' && (
-                <Link
-                  href={`/proposals/${p.id}/generate`}
-                  className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
-                >
-                  → AI 슬라이드 생성하기
-                </Link>
-              )
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <Link
-            href={stepHref}
-            className="bg-[#2563EB] text-white text-xs px-3.5 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {p.status === 'exported' ? '다시 편집' : '이어서 작업'}
-          </Link>
-          {(p.status === 'editing' || p.status === 'exported') && (
-            <Link
-              href={`/proposals/${p.id}/export${latestGen ? `?gen=${latestGen.id}` : ''}`}
-              className="text-xs text-gray-400 hover:text-blue-600 transition-colors"
-            >
-              PPTX 다운로드
-            </Link>
-          )}
-          <span className="text-xs text-gray-300">
-            {new Date(p.updated_at).toLocaleDateString('ko-KR')}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
   const session = await auth()
-  if (session?.user?.email !== 'hoo000kr789@gmail.com') redirect('/')
+  if (session?.user?.email !== process.env.ADMIN_EMAIL) redirect('/')
 
   const sb = createServiceClient()
   const [{ data: requests }, { data: users }] = await Promise.all([

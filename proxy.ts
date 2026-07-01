@@ -21,7 +21,7 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(new URL('/unauthorized', req.url))
   }
 
-  if (pathname.startsWith('/admin') && session.user?.email !== 'hoo000kr789@gmail.com') {
+  if (pathname.startsWith('/admin') && session.user?.email !== process.env.ADMIN_EMAIL) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 

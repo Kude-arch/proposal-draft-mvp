@@ -19,6 +19,7 @@ export interface SlideMargins {
 
 export interface Proposal {
   id: string
+  user_email: string | null
   title: string
   client: string | null
   location: string | null

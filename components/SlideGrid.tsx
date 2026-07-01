@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { ProposalSlide, SlideCell } from '@/types'
 import Image from 'next/image'
 import ItemPanel from './ItemPanel'
@@ -40,6 +40,9 @@ export default function SlideGrid({
   } | null>(null)
   const [selectedCells, setSelectedCells] = useState<Record<string, Set<string>>>({})
   const [mergingSlide, setMergingSlide] = useState<string | null>(null)
+  const [editingTitleSlideId, setEditingTitleSlideId] = useState<string | null>(null)
+  const [titleDraft, setTitleDraft] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   function getSelected(slideId: string): Set<string> {
     return selectedCells[slideId] ?? new Set()
@@ -79,6 +82,26 @@ export default function SlideGrid({
     if (!activeCell) return
     onCellUpdate(activeCell.slideId, activeCell.cellId, item)
     setActiveCell(null)
+  }
+
+  function startEditTitle(slideId: string, currentTitle: string) {
+    setEditingTitleSlideId(slideId)
+    setTitleDraft(currentTitle)
+    setTimeout(() => titleInputRef.current?.select(), 0)
+  }
+
+  async function commitTitle(slideId: string) {
+    if (editingTitleSlideId !== slideId) return
+    setEditingTitleSlideId(null)
+    const res = await fetch(`/api/slides/${slideId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slide_title: titleDraft }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      onSlideUpdate(updated)
+    }
   }
 
   async function handleLayoutChange(slideId: string, cols: number, rows: number) {
@@ -160,8 +183,28 @@ export default function SlideGrid({
                     className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm"
                   >
                     <div className="bg-slate-700 text-white text-xs px-2 py-1 flex justify-between items-center">
-                      <span className="truncate">{slide.slide_title}</span>
-                      <span className="text-slate-300 ml-1">#{slide.slide_number}</span>
+                      {editingTitleSlideId === slide.id ? (
+                        <input
+                          ref={titleInputRef}
+                          value={titleDraft}
+                          onChange={e => setTitleDraft(e.target.value)}
+                          onBlur={() => commitTitle(slide.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitTitle(slide.id)
+                            if (e.key === 'Escape') setEditingTitleSlideId(null)
+                          }}
+                          className="flex-1 bg-slate-600 text-white text-xs px-1 rounded outline-none min-w-0"
+                        />
+                      ) : (
+                        <span
+                          className="truncate cursor-text hover:underline"
+                          title="클릭하여 제목 수정"
+                          onClick={() => startEditTitle(slide.id, slide.slide_title ?? '')}
+                        >
+                          {slide.slide_title}
+                        </span>
+                      )}
+                      <span className="text-slate-300 ml-1 flex-shrink-0">#{slide.slide_number}</span>
                     </div>
 
                     <div className="flex items-center gap-1 px-1.5 py-1 bg-gray-50 border-b border-gray-100 flex-wrap">

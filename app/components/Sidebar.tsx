@@ -77,7 +77,9 @@ export default function Sidebar({ isAdmin, pendingCount, userEmail }: Props) {
 
       <div className="border-t border-[#F0F0EF] px-3 py-2.5 flex items-center gap-2">
         <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-[10px] font-semibold flex-shrink-0">
-          {userEmail.charAt(0).toUpperCase()}
+          {/[a-zA-Z]/.test(userEmail.charAt(0))
+            ? userEmail.charAt(0).toUpperCase()
+            : userEmail.replace(/[^a-zA-Z]/g, '').charAt(0).toUpperCase() || 'U'}
         </div>
         <div className="text-[10px] text-gray-400 truncate">{userEmail}</div>
       </div>

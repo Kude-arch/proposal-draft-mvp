@@ -158,7 +158,7 @@ export default function InfoPage({ params }: Props) {
         if (ff.special_conditions) setSpecialConditions(ff.special_conditions)
       }
 
-      await fetch(`/api/proposals/${id}`, {
+      const patchRes = await fetch(`/api/proposals/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,6 +178,10 @@ export default function InfoPage({ params }: Props) {
           special_conditions: parsed.form_fields?.special_conditions ?? specialConditions,
         }),
       })
+      if (!patchRes.ok) {
+        const errData = await patchRes.json().catch(() => ({}))
+        throw new Error(errData.error ?? 'DB 저장 실패 — RFP 파싱 결과가 저장되지 않았습니다')
+      }
       const updated = await fetch(`/api/proposals/${id}`).then(r => r.json())
       setProposal(updated)
     } catch (e) {

@@ -1,11 +1,9 @@
 import { auth } from '@/auth'
 import { createServiceClient } from '@/lib/supabase-server'
 
-const ADMIN = 'hoo000kr789@gmail.com'
-
 export async function GET() {
   const session = await auth()
-  if (session?.user?.email !== ADMIN) return Response.json({ error: 'Forbidden' }, { status: 403 })
+  if (session?.user?.email !== process.env.ADMIN_EMAIL) return Response.json({ error: 'Forbidden' }, { status: 403 })
 
   const sb = createServiceClient()
   const { data, error } = await sb
@@ -19,7 +17,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (session?.user?.email !== ADMIN) return Response.json({ error: 'Forbidden' }, { status: 403 })
+  if (session?.user?.email !== process.env.ADMIN_EMAIL) return Response.json({ error: 'Forbidden' }, { status: 403 })
 
   const { email } = await req.json()
   if (!email?.trim()) return Response.json({ error: 'email required' }, { status: 400 })

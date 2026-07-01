@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 import { createServerClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
   const { tier_b_keywords, limit = 20 } = await req.json()
   const sb = createServerClient()
 

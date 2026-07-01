@@ -4,7 +4,7 @@ import Sidebar from '@/app/components/Sidebar'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
-  const isAdmin = session?.user?.email === 'hoo000kr789@gmail.com'
+  const isAdmin = session?.user?.email === process.env.ADMIN_EMAIL
 
   let pendingCount = 0
   if (isAdmin) {

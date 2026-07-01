@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 import { createServerClient } from '@/lib/supabase'
 import { generateJson } from '@/lib/gemini'
 import { isValidUuid } from '@/lib/utils'
@@ -29,6 +30,9 @@ function scoreCandidate(item: Omit<CandidateItem, 'score'>, keywords: string[]):
 }
 
 export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { proposal_id } = await req.json()
   if (!proposal_id || !isValidUuid(proposal_id)) {
     return Response.json({ error: 'invalid proposal_id' }, { status: 400 })
@@ -41,6 +45,9 @@ export async function POST(req: NextRequest) {
     .eq('id', proposal_id)
     .single()
   if (!proposal) return Response.json({ error: 'proposal not found' }, { status: 404 })
+  if (proposal.user_email !== null && proposal.user_email !== session.user.email) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   // 10개 제한 체크
   const { count } = await sb

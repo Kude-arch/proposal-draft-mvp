@@ -37,12 +37,28 @@ export default function GeneratePage({ params }: Props) {
     coverage_score?: number
     coverage_hint?: string | null
   }>>([])
+  const [sourceStatus, setSourceStatus] = useState({
+    rfp_uploaded: false,
+    drawing_memo: false,
+    pptx_uploaded: false,
+  })
 
   useEffect(() => {
     fetch(`/api/proposals/${id}/generations`)
       .then(r => r.json())
       .then((gens: unknown[]) => setGenCount(gens.length))
       .catch(() => setGenCount(0))
+
+    fetch(`/api/proposals/${id}`)
+      .then(r => r.json())
+      .then((p: { rfp_file_url?: string | null; drawing_review_raw?: string | null }) => {
+        setSourceStatus({
+          rfp_uploaded: !!p.rfp_file_url,
+          drawing_memo: !!p.drawing_review_raw,
+          pptx_uploaded: false,
+        })
+      })
+      .catch(() => {})
   }, [id])
 
   function setPhaseStatus(idx: number, status: PhaseStatus, detail?: string) {
@@ -70,14 +86,21 @@ export default function GeneratePage({ params }: Props) {
       // proceed with cached genCount if fetch fails
     }
 
+    const TIMEOUT_MS = 120_000
+    function fetchWithTimeout(url: string, init: RequestInit) {
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+      return fetch(url, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(timer))
+    }
+
     try {
       setPhaseStatus(0, 'running')
       setPhaseStatus(1, 'running')
-      const analyzeRes = await fetch('/api/analyze', {
+      const analyzeRes = await fetchWithTimeout('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ proposal_id: id }),
-      })
+      }).catch(e => { throw e.name === 'AbortError' ? new Error('분석 시간 초과 (2분) — 다시 시도하세요') : e })
       const analyzeData = await analyzeRes.json()
       if (!analyzeRes.ok) throw new Error(analyzeData.error ?? '분석 실패')
 
@@ -87,11 +110,11 @@ export default function GeneratePage({ params }: Props) {
       setPhaseStatus(1, 'done', `${plans.length}개 섹션 분석 완료`)
 
       setPhaseStatus(2, 'running')
-      const genRes = await fetch('/api/generate', {
+      const genRes = await fetchWithTimeout('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ proposal_id: id }),
-      })
+      }).catch(e => { throw e.name === 'AbortError' ? new Error('슬라이드 생성 시간 초과 (2분) — 다시 시도하세요') : e })
       const genData = await genRes.json()
       if (!genRes.ok) throw new Error(genData.error ?? '슬라이드 생성 실패')
 
@@ -116,12 +139,6 @@ export default function GeneratePage({ params }: Props) {
     { label: '슬라이드 편집', href: `/proposals/${id}/edit`, status: 'pending' as const },
     { label: 'PPTX 내보내기', href: `/proposals/${id}/export`, status: 'pending' as const },
   ]
-
-  const sourceStatus = {
-    rfp_uploaded: true,
-    drawing_memo: false,
-    pptx_uploaded: false,
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">

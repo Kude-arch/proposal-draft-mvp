@@ -1,8 +1,13 @@
 import { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 import { createServerClient } from '@/lib/supabase'
 import { generatePptx } from '@/lib/pptx-generator'
+import type { Proposal, ProposalSlide, SlideCell } from '@/types'
 
 export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { proposal_id, generation_id } = await req.json()
   const sb = createServerClient()
 
@@ -38,7 +43,10 @@ export async function POST(req: NextRequest) {
 
   if (!slides?.length) return Response.json({ error: '슬라이드가 없습니다' }, { status: 400 })
 
-  const pptxBuffer = await generatePptx(proposal, slides)
+  const pptxBuffer = await generatePptx(
+    proposal as Proposal,
+    slides as (ProposalSlide & { cells: SlideCell[] })[]
+  )
 
   const filename = `${proposal.title ?? 'proposal'}_제안서.pptx`
     .replace(/[/\\:*?"<>|]/g, '_')
