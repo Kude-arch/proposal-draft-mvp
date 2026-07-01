@@ -36,11 +36,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // 이미 생성 중인 경우 중복 요청 차단
-  if (proposal.status === 'analyzing') {
-    return Response.json({ error: '이미 생성 중입니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
-  }
-
   // 10개 제한 체크
   const { count } = await sb
     .from('slide_generations')
@@ -74,8 +69,20 @@ export async function POST(req: NextRequest) {
   }
   const generationId = newGen.id
 
-  // 생성 중 상태 표시 (중복 요청 방지)
-  await sb.from('proposals').update({ status: 'analyzing' }).eq('id', proposal_id)
+  // Atomic lock: status가 'analyzing'이 아닐 때만 'analyzing'으로 변경
+  // 조건부 UPDATE로 TOCTOU 레이스 컨디션 방지
+  const { data: locked } = await sb
+    .from('proposals')
+    .update({ status: 'analyzing' })
+    .eq('id', proposal_id)
+    .neq('status', 'analyzing')
+    .select('id')
+    .maybeSingle()
+
+  if (!locked) {
+    await sb.from('slide_generations').delete().eq('id', generationId)
+    return Response.json({ error: '이미 생성 중입니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
 
   let insertionSucceeded = false
   try {
