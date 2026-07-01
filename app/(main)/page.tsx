@@ -41,7 +41,8 @@ export default async function Home() {
           memberProposals = (mp ?? []) as Proposal[]
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('[Home] 멤버 제안서 로드 실패:', err)
       // 멤버 제안서 로드 실패 시 소유 제안서만 표시
     }
   }
