@@ -25,8 +25,12 @@ export async function getProposalAccess(
 
   if (!proposal) return { proposal: null, access: null, sb }
 
-  // 소유자 (user_email IS NULL 은 마이그레이션 전 레거시 데이터)
-  if (proposal.user_email === null || proposal.user_email === userEmail) {
+  // 소유자 확인 (null 레거시 데이터는 관리자만 접근)
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (proposal.user_email === userEmail) {
+    return { proposal, access: 'owner', sb }
+  }
+  if (proposal.user_email === null && adminEmail && userEmail === adminEmail) {
     return { proposal, access: 'owner', sb }
   }
 

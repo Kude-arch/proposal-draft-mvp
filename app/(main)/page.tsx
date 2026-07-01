@@ -12,8 +12,12 @@ export default async function Home() {
 
   const sb = createServerClient()
   const query = sb.from('proposals').select('*').order('updated_at', { ascending: false })
+  const adminEmail = process.env.ADMIN_EMAIL
+  const isAdmin = userEmail && adminEmail && userEmail === adminEmail
   const { data: ownedProposals } = userEmail
-    ? await query.or(`user_email.eq.${userEmail},user_email.is.null`)
+    ? isAdmin
+      ? await query.or(`user_email.eq.${userEmail},user_email.is.null`)
+      : await query.eq('user_email', userEmail)
     : await query.is('user_email', null)
 
   // 멤버로 초대된 제안서도 포함
