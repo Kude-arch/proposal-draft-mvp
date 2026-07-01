@@ -14,6 +14,8 @@ interface Props {
 export default function ProposalCard({ proposal: p, generations }: Props) {
   const router = useRouter()
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const latestGen = generations.length > 0 ? generations[generations.length - 1] : null
   const hasSlides = generations.length > 0
@@ -27,14 +29,19 @@ export default function ProposalCard({ proposal: p, generations }: Props) {
     : `/proposals/${p.id}/export`
 
   async function handleDelete() {
-    if (!confirm(`"${p.title}" 제안서를 삭제하시겠습니까?\n슬라이드, 분석 결과가 모두 삭제됩니다.`)) return
+    if (!confirmDelete) {
+      setConfirmDelete(true)
+      return
+    }
     setDeleting(true)
+    setDeleteError('')
     const res = await fetch(`/api/proposals/${p.id}`, { method: 'DELETE' })
     if (res.ok) {
       router.refresh()
     } else {
-      alert('삭제 실패 — 다시 시도해 주세요')
+      setDeleteError('삭제 실패 — 다시 시도해 주세요')
       setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -121,14 +128,35 @@ export default function ProposalCard({ proposal: p, generations }: Props) {
           <span className="text-xs text-gray-300">
             {new Date(p.updated_at).toLocaleDateString('ko-KR')}
           </span>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-xs text-gray-300 hover:text-red-400 transition-colors disabled:opacity-50"
-            title="제안서 삭제"
-          >
-            {deleting ? '삭제 중...' : '삭제'}
-          </button>
+          {deleteError && (
+            <span className="text-xs text-red-500">{deleteError}</span>
+          )}
+          {confirmDelete && !deleting ? (
+            <div className="flex gap-1 items-center">
+              <span className="text-xs text-red-500">정말 삭제?</span>
+              <button
+                onClick={handleDelete}
+                className="text-xs text-red-500 hover:text-red-700 font-medium"
+              >
+                확인
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                취소
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-xs text-gray-300 hover:text-red-400 transition-colors disabled:opacity-50"
+              title="제안서 삭제"
+            >
+              {deleting ? '삭제 중...' : '삭제'}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { GoogleAIFileManager } from '@google/generative-ai/server'
-import fs from 'fs'
+import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
 
@@ -18,7 +18,7 @@ export function getModel(jsonMode = true) {
 
 export async function uploadPdfToGemini(buffer: Buffer, filename: string): Promise<string> {
   const tmpPath = path.join(os.tmpdir(), `rfp_${Date.now()}_${filename}`)
-  fs.writeFileSync(tmpPath, buffer)
+  await fs.writeFile(tmpPath, buffer)
   try {
     const uploadResult = await fileManager.uploadFile(tmpPath, {
       mimeType: 'application/pdf',
@@ -26,7 +26,7 @@ export async function uploadPdfToGemini(buffer: Buffer, filename: string): Promi
     })
     return uploadResult.file.uri
   } finally {
-    fs.unlinkSync(tmpPath)
+    await fs.unlink(tmpPath).catch(() => {})
   }
 }
 
@@ -40,9 +40,20 @@ function parseJsonResponse<T>(text: string): T {
   }
 }
 
+const GEMINI_TIMEOUT_MS = 180_000 // 3분
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Gemini API 응답 시간 초과 (${ms / 1000}초)`)), ms)
+    ),
+  ])
+}
+
 export async function generateJson<T>(prompt: string): Promise<T> {
   const model = getModel(true)
-  const result = await model.generateContent(prompt)
+  const result = await withTimeout(model.generateContent(prompt), GEMINI_TIMEOUT_MS)
   return parseJsonResponse<T>(result.response.text())
 }
 
@@ -52,10 +63,13 @@ export async function generateJsonWithFile<T>(
   prompt: string
 ): Promise<T> {
   const model = getModel(true)
-  const result = await model.generateContent([
-    { fileData: { mimeType, fileUri } },
-    { text: prompt },
-  ])
+  const result = await withTimeout(
+    model.generateContent([
+      { fileData: { mimeType, fileUri } },
+      { text: prompt },
+    ]),
+    GEMINI_TIMEOUT_MS
+  )
   return parseJsonResponse<T>(result.response.text())
 }
 
@@ -64,9 +78,12 @@ export async function generateJsonWithFiles<T>(
   prompt: string
 ): Promise<T> {
   const model = getModel(true)
-  const result = await model.generateContent([
-    ...files.map(f => ({ fileData: { mimeType: f.mimeType, fileUri: f.uri } })),
-    { text: prompt },
-  ])
+  const result = await withTimeout(
+    model.generateContent([
+      ...files.map(f => ({ fileData: { mimeType: f.mimeType, fileUri: f.uri } })),
+      { text: prompt },
+    ]),
+    GEMINI_TIMEOUT_MS
+  )
   return parseJsonResponse<T>(result.response.text())
 }

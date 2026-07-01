@@ -28,6 +28,7 @@ export default function TocPage({ params }: Props) {
   const [newTitle, setNewTitle] = useState('')
   const [aiSections, setAiSections] = useState<string[]>([])
   const [genCount, setGenCount] = useState<number>(0)
+  const [confirmSave, setConfirmSave] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -96,12 +97,11 @@ export default function TocPage({ params }: Props) {
 
   async function handleSave() {
     if (!sections.length) return
-    if (genCount > 0) {
-      const ok = confirm(
-        `이미 ${genCount}개의 안(案)이 생성되어 있습니다.\n목차를 변경하면 기존 슬라이드의 섹션 분류가 맞지 않을 수 있습니다.\n계속 저장하시겠습니까?`
-      )
-      if (!ok) return
+    if (genCount > 0 && !confirmSave) {
+      setConfirmSave(true)
+      return
     }
+    setConfirmSave(false)
     setSaving(true)
     setSaveError('')
     try {
@@ -335,6 +335,28 @@ export default function TocPage({ params }: Props) {
         <p className="mb-3 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
           {saveError}
         </p>
+      )}
+
+      {confirmSave && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
+          <p className="text-sm text-yellow-800">
+            이미 {genCount}개의 안(案)이 생성되어 있습니다. 목차를 변경하면 기존 슬라이드의 섹션 분류가 맞지 않을 수 있습니다. 계속하시겠습니까?
+          </p>
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => setConfirmSave(false)}
+              className="text-xs px-3 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSave}
+              className="text-xs px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+            >
+              계속 저장
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="flex justify-between">

@@ -25,27 +25,33 @@ export default function ExportPage({ params }: Props) {
 
   useEffect(() => {
     async function load() {
-      const genQuery = genParam ? `?gen=${genParam}` : ''
-      const [propRes, slidesRes, gensRes] = await Promise.all([
-        fetch(`/api/proposals/${id}`),
-        fetch(`/api/proposals/${id}/slides${genQuery}`),
-        fetch(`/api/proposals/${id}/generations`),
-      ])
-      const prop = await propRes.json()
-      const sls = await slidesRes.json()
-      const gens: SlideGeneration[] = await gensRes.json()
+      try {
+        const genQuery = genParam ? `?gen=${genParam}` : ''
+        const [propRes, slidesRes, gensRes] = await Promise.all([
+          fetch(`/api/proposals/${id}`),
+          fetch(`/api/proposals/${id}/slides${genQuery}`),
+          fetch(`/api/proposals/${id}/generations`),
+        ])
+        if (!propRes.ok) throw new Error('제안서를 불러올 수 없습니다')
+        const prop = await propRes.json()
+        const sls = slidesRes.ok ? await slidesRes.json() : []
+        const gens: SlideGeneration[] = gensRes.ok ? await gensRes.json() : []
 
-      setProposal(prop)
-      setSlideCount((sls ?? []).length)
+        setProposal(prop)
+        setSlideCount((sls ?? []).length)
 
-      if (genParam) {
-        const matched = gens.find(g => g.id === genParam) ?? null
-        setCurrentGen(matched)
-        if (!matched) setGenNotFound(true)
-      } else if (gens.length > 0) {
-        setCurrentGen(gens[gens.length - 1])
+        if (genParam) {
+          const matched = gens.find(g => g.id === genParam) ?? null
+          setCurrentGen(matched)
+          if (!matched) setGenNotFound(true)
+        } else if (gens.length > 0) {
+          setCurrentGen(gens[gens.length - 1])
+        }
+      } catch (e) {
+        setExportError(e instanceof Error ? e.message : '데이터 로드 실패')
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [id, genParam])

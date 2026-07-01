@@ -6,6 +6,10 @@ import { generateJson, generateJsonWithFiles, uploadPdfToGemini } from '@/lib/ge
 import { detectDocType } from '@/lib/utils'
 import type { Pass0Result } from '@/types'
 
+const SERVER_MAX_FILE_BYTES = 50 * 1024 * 1024   // 50MB per file
+const SERVER_MAX_TOTAL_BYTES = 200 * 1024 * 1024  // 200MB total
+const SERVER_MAX_FILE_COUNT = 10
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -14,6 +18,19 @@ export async function POST(req: NextRequest) {
   const drawingMemo = (formData.get('drawing_memo') as string) || ''
 
   if (!files.length) return Response.json({ error: '파일이 없습니다' }, { status: 400 })
+  if (files.length > SERVER_MAX_FILE_COUNT) {
+    return Response.json({ error: `파일은 최대 ${SERVER_MAX_FILE_COUNT}개까지 업로드 가능합니다` }, { status: 400 })
+  }
+
+  const oversized = files.find(f => f.size > SERVER_MAX_FILE_BYTES)
+  if (oversized) {
+    return Response.json({ error: `파일 크기 초과: ${oversized.name} (최대 50MB)` }, { status: 400 })
+  }
+
+  const totalBytes = files.reduce((s, f) => s + f.size, 0)
+  if (totalBytes > SERVER_MAX_TOTAL_BYTES) {
+    return Response.json({ error: '총 파일 크기가 200MB를 초과합니다' }, { status: 400 })
+  }
 
   const docTexts: Array<{ label: string; text: string }> = []
   const pdfUris: Array<{ label: string; uri: string }> = []
