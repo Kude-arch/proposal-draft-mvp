@@ -35,7 +35,7 @@ function parseJsonResponse<T>(text: string): T {
   try {
     return JSON.parse(text) as T
   } catch {
-    console.error('Gemini JSON 파싱 실패. 원본 응답 앞 500자:', text.slice(0, 500))
+    console.error('Gemini JSON 파싱 실패')
     throw new Error('Gemini 응답을 JSON으로 파싱할 수 없습니다')
   }
 }
