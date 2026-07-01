@@ -1,13 +1,13 @@
-# SDD Progress Ledger
-Plan: docs/superpowers/plans/2026-06-25-grid-layout.md
-Branch base: 6443e31
+# SDD Progress Ledger — security-and-quality-fixes
+Plan: docs/superpowers/plans/2026-07-01-security-and-quality-fixes.md
+Branch base: 0b06b13
 
-Task 1: complete (DB migration — layout_cols→cols, layout_rows→rows, drop position cols, add slides_ready status)
-Task 2: complete (commits 7769376..7769376, types update)
-Task 3: complete (commits fbaff04..fbaff04, generate route grid)
-Task 4: complete (commits 5a73d8b..5a73d8b, pptx generator)
-Task 5: complete (commits f20ec61..f20ec61, toc slide size)
-Task 6: complete (commits 9e2803d..9e2803d, slide API routes)
-Task 7: complete (commits eeb97f3..eeb97f3, SlideGrid CSS grid)
-Task 8: complete (commits 5ef0fc7..5ef0fc7, edit page wire)
-Task 9: complete (git push 6443e31..5ef0fc7)
+Task 1: complete (commits 0b06b13..f2d23f0, review clean)
+Task 2: complete (commits f2d23f0..a1e5f18, review clean — minor: lock-after-insert is spec-intentional, sections early return is pre-existing)
+Task 3: complete (commits a1e5f18..21f98c0, review clean)
+Task 4: complete (commits 21f98c0..cb1e81f, review clean — minor: null==null edge case pre-existing, out of scope)
+Task 5: complete (commits cb1e81f..6d56571, review clean)
+Task 6: complete (commits 6d56571..1cba9a6, review clean)
+Task 7: complete (commits 1cba9a6..13da7ec, review clean)
+Task 8: complete (commits 13da7ec..e77f286, review clean — minor: isAdmin cast consistent with isAllowed pattern)
+Task 9: complete (commits e77f286..d03b21f, review clean)
