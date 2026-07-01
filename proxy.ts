@@ -15,7 +15,7 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(loginUrl)
   }
 
-  const isAllowed = (session.user as any)?.isAllowed
+  const isAllowed = session.user?.isAllowed
   const unauthorizedPaths = ['/unauthorized', '/api/access-request']
   if (!isAllowed && !unauthorizedPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/unauthorized', req.url))

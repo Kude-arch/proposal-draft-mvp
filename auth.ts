@@ -37,7 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { isAllowed?: boolean }).isAllowed = token.isAllowed as boolean
+        session.user.isAllowed = token.isAllowed as boolean
       }
       return session
     },
