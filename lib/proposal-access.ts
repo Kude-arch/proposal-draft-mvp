@@ -1,9 +1,10 @@
 import { createServerClient } from '@/lib/supabase'
+import type { Proposal } from '@/types'
 
 export type AccessLevel = 'owner' | 'member' | null
 
 interface AccessResult {
-  proposal: Record<string, unknown> | null
+  proposal: Proposal | null
   access: AccessLevel
   sb: ReturnType<typeof createServerClient>
 }
