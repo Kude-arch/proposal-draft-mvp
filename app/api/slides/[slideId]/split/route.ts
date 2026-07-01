@@ -58,6 +58,18 @@ export async function POST(
     await sb.from('slide_cells').insert(newCells)
   }
 
+  // cell_index 재정렬
+  const { data: remaining } = await sb
+    .from('slide_cells')
+    .select('id, row_start, col_start')
+    .eq('slide_id', slideId)
+  if (remaining?.length) {
+    remaining.sort((a, b) => a.row_start - b.row_start || a.col_start - b.col_start)
+    await Promise.all(remaining.map((c, idx) =>
+      sb.from('slide_cells').update({ cell_index: idx }).eq('id', c.id)
+    ))
+  }
+
   const { data: slide } = await sb
     .from('proposal_slides')
     .select('*, cells:slide_cells(*)')

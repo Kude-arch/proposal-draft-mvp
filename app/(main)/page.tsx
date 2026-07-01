@@ -19,22 +19,26 @@ export default async function Home() {
   // 멤버로 초대된 제안서도 포함
   let memberProposals: Proposal[] = []
   if (userEmail) {
-    const { data: memberRows } = await sb
-      .from('proposal_members')
-      .select('proposal_id')
-      .eq('user_email', userEmail)
-    const memberIds = (memberRows ?? []).map((r: { proposal_id: string }) => r.proposal_id)
-    if (memberIds.length > 0) {
-      const ownedIds = new Set((ownedProposals ?? []).map((p: Proposal) => p.id))
-      const newIds = memberIds.filter((id: string) => !ownedIds.has(id))
-      if (newIds.length > 0) {
-        const { data: mp } = await sb
-          .from('proposals')
-          .select('*')
-          .in('id', newIds)
-          .order('updated_at', { ascending: false })
-        memberProposals = (mp ?? []) as Proposal[]
+    try {
+      const { data: memberRows } = await sb
+        .from('proposal_members')
+        .select('proposal_id')
+        .eq('user_email', userEmail)
+      const memberIds = (memberRows ?? []).map((r: { proposal_id: string }) => r.proposal_id)
+      if (memberIds.length > 0) {
+        const ownedIds = new Set((ownedProposals ?? []).map((p: Proposal) => p.id))
+        const newIds = memberIds.filter((id: string) => !ownedIds.has(id))
+        if (newIds.length > 0) {
+          const { data: mp } = await sb
+            .from('proposals')
+            .select('*')
+            .in('id', newIds)
+            .order('updated_at', { ascending: false })
+          memberProposals = (mp ?? []) as Proposal[]
+        }
       }
+    } catch {
+      // 멤버 제안서 로드 실패 시 소유 제안서만 표시
     }
   }
 

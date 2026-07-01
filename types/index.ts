@@ -104,8 +104,8 @@ export interface SlideCell {
 export interface ProposalItem {
   id: string
   title: string
-  section_big: string
-  section_small: string
+  section_big: string | null
+  section_small: string | null
   keywords: Array<{ type: 'taxonomy' | 'custom'; value: string }>
   keyword_status: 'ai_generated' | 'human_verified'
   content_text: string | null

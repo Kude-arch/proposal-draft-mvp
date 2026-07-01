@@ -36,6 +36,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // 이미 생성 중인 경우 중복 요청 차단
+  if (proposal.status === 'analyzing') {
+    return Response.json({ error: '이미 생성 중입니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
+
   // 10개 제한 체크
   const { count } = await sb
     .from('slide_generations')
@@ -68,6 +73,9 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'generation 생성 실패' }, { status: 500 })
   }
   const generationId = newGen.id
+
+  // 생성 중 상태 표시 (중복 요청 방지)
+  await sb.from('proposals').update({ status: 'analyzing' }).eq('id', proposal_id)
 
   let insertionSucceeded = false
   try {
@@ -318,7 +326,19 @@ ${sectionBlocks}
 
   } finally {
     if (!insertionSucceeded) {
+      // 부분 삽입된 슬라이드/셀 정리
+      const { data: orphanSlides } = await sb
+        .from('proposal_slides')
+        .select('id')
+        .eq('generation_id', generationId)
+      if (orphanSlides?.length) {
+        const slideIds = orphanSlides.map((s: { id: string }) => s.id)
+        await sb.from('slide_cells').delete().in('slide_id', slideIds)
+        await sb.from('proposal_slides').delete().in('id', slideIds)
+      }
       await sb.from('slide_generations').delete().eq('id', generationId)
+      // 상태 복구
+      await sb.from('proposals').update({ status: 'draft' }).eq('id', proposal_id)
     }
   }
 }

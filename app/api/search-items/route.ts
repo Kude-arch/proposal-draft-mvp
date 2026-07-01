@@ -5,7 +5,7 @@ import { scoreItem } from '@/lib/score-items'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
   const { tier_b_keywords, limit = 20 } = await req.json()
   const sb = createServerClient()
 

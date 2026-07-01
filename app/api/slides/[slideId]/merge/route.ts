@@ -55,6 +55,19 @@ export async function POST(
     .eq('id', keepCell.id)
   if (updateErr) return Response.json({ error: updateErr.message }, { status: 500 })
 
+  // cell_index 재정렬
+  const { data: remaining } = await sb
+    .from('slide_cells')
+    .select('id, row_start, col_start')
+    .eq('slide_id', slideId)
+    .order('row_start')
+  if (remaining?.length) {
+    remaining.sort((a, b) => a.row_start - b.row_start || a.col_start - b.col_start)
+    await Promise.all(remaining.map((c, idx) =>
+      sb.from('slide_cells').update({ cell_index: idx }).eq('id', c.id)
+    ))
+  }
+
   const { data: slide } = await sb
     .from('proposal_slides')
     .select('*, cells:slide_cells(*)')

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session?.user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
-  const { access, sb } = await getProposalAccess(id, session.user.email)
+  const { proposal, access, sb } = await getProposalAccess(id, session.user.email)
   if (!access) return accessDenied()
   if (access !== 'owner') return ownerRequired()
 
@@ -37,8 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const targetEmail = email.trim().toLowerCase()
 
   // 소유자 본인을 멤버로 추가 불가
-  const proposal = await sb.from('proposals').select('user_email').eq('id', id).single()
-  if (proposal.data?.user_email === targetEmail) {
+  if ((proposal as { user_email?: string | null })?.user_email === targetEmail) {
     return Response.json({ error: '소유자는 이미 전체 권한을 갖고 있습니다' }, { status: 400 })
   }
 

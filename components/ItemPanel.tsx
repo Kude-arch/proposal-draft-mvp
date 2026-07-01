@@ -14,10 +14,12 @@ export default function ItemPanel({ sectionTitle, tierBKeywords, onSelect }: Ite
   const [items, setItems] = useState<(ProposalItem & { score: number })[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const [searchError, setSearchError] = useState('')
   const [query, setQuery] = useState('')
 
   async function search(keywords?: string[]) {
     setLoading(true)
+    setSearchError('')
     try {
       const kws = keywords ?? (query ? [query] : tierBKeywords)
       const res = await fetch('/api/search-items', {
@@ -26,7 +28,11 @@ export default function ItemPanel({ sectionTitle, tierBKeywords, onSelect }: Ite
         body: JSON.stringify({ tier_b_keywords: kws, limit: 30 }),
       })
       const data = await res.json()
-      setItems(res.ok && Array.isArray(data) ? data : [])
+      if (!res.ok) throw new Error(data.error ?? '검색 실패')
+      setItems(Array.isArray(data) ? data : [])
+      setSearched(true)
+    } catch (e) {
+      setSearchError(e instanceof Error ? e.message : '검색 중 오류가 발생했습니다')
       setSearched(true)
     } finally {
       setLoading(false)
@@ -81,7 +87,12 @@ export default function ItemPanel({ sectionTitle, tierBKeywords, onSelect }: Ite
             검색 중...
           </div>
         )}
-        {searched && !loading && items.length === 0 && (
+        {searched && !loading && searchError && (
+          <div className="flex items-center justify-center h-32 text-red-400 text-sm px-4 text-center">
+            {searchError}
+          </div>
+        )}
+        {searched && !loading && !searchError && items.length === 0 && (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
             검색 결과가 없습니다
           </div>
