@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@/auth'
 import { createServerClient } from '@/lib/supabase'
+import { scoreItem } from '@/lib/score-items'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -35,28 +36,10 @@ export async function POST(req: NextRequest) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  // 클라이언트사이드 스코어 계산
-  const scored = (items ?? []).map(item => {
-    let score = 0
-    for (const kw of keywords) {
-      const kwLower = kw.toLowerCase()
-      const titleLower = (item.title ?? '').toLowerCase()
-      const contentLower = (item.content_text ?? '').toLowerCase()
-      const customKws: string[] = (item.keywords ?? [])
-        .filter((k: { type: string }) => k.type === 'custom')
-        .map((k: { value: string }) => k.value.toLowerCase())
-      const taxKws: string[] = (item.keywords ?? [])
-        .filter((k: { type: string }) => k.type === 'taxonomy')
-        .map((k: { value: string }) => k.value.toLowerCase())
-
-      if (titleLower.includes(kwLower)) score += 40
-      if (customKws.some(c => c.includes(kwLower))) score += 30
-      if (contentLower.includes(kwLower)) score += 20
-      if (taxKws.some(t => t.includes(kwLower))) score += 10
-    }
-    if (item.keyword_status === 'human_verified') score += 5
-    return { ...item, score }
-  })
+  const scored = (items ?? []).map(item => ({
+    ...item,
+    score: scoreItem(item, keywords),
+  }))
 
   scored.sort((a, b) => b.score - a.score)
   return Response.json(scored.slice(0, limit))

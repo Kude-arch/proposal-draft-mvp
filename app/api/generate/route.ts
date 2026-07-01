@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { createServerClient } from '@/lib/supabase'
 import { generateJson } from '@/lib/gemini'
 import { isValidUuid } from '@/lib/utils'
+import { scoreItem } from '@/lib/score-items'
 import type { Pass2Result, SectionPlan, Pass2Slide } from '@/types'
 
 interface CandidateItem {
@@ -13,20 +14,6 @@ interface CandidateItem {
   section_small: string | null
   keywords: Array<{ type: string; value: string }>
   score: number
-}
-
-function scoreCandidate(item: Omit<CandidateItem, 'score'>, keywords: string[]): number {
-  let score = 0
-  const title = item.title.toLowerCase()
-  const allKwValues = (item.keywords ?? []).map(k => k.value.toLowerCase())
-  const customKwValues = (item.keywords ?? []).filter(k => k.type === 'custom').map(k => k.value.toLowerCase())
-  for (const kw of keywords) {
-    const kl = kw.toLowerCase()
-    if (title.includes(kl)) score += 40
-    if (customKwValues.some(v => v.includes(kl) || kl.includes(v))) score += 30
-    if (allKwValues.some(v => v.includes(kl) || kl.includes(v))) score += 20
-  }
-  return score
 }
 
 export async function POST(req: NextRequest) {
@@ -125,7 +112,7 @@ export async function POST(req: NextRequest) {
       const scored = raw.map(it => ({
         ...it,
         keywords: it.keywords ?? [],
-        score: scoreCandidate(it as Omit<CandidateItem, 'score'>, tierBKeywords),
+        score: scoreItem(it, tierBKeywords),
       }))
       scored.sort((a, b) => b.score - a.score)
       candidates = scored.slice(0, fetchLimit)
