@@ -25,6 +25,22 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   }
 }
 
+async function batchFetchImages(
+  urls: string[],
+  concurrency = 5
+): Promise<Map<string, string | null>> {
+  const cache = new Map<string, string | null>()
+  for (let i = 0; i < urls.length; i += concurrency) {
+    const batch = urls.slice(i, i + concurrency)
+    await Promise.all(
+      batch.map(async url => {
+        cache.set(url, await fetchImageAsDataUri(url))
+      })
+    )
+  }
+  return cache
+}
+
 export async function generatePptx(
   proposal: Proposal,
   slides: (ProposalSlide & { cells: SlideCell[] })[]
@@ -102,12 +118,7 @@ export async function generatePptx(
       }
     }
   }
-  const imageCache = new Map<string, string | null>()
-  await Promise.all(
-    Array.from(allImageUrls).map(async url => {
-      imageCache.set(url, await fetchImageAsDataUri(url))
-    })
-  )
+  const imageCache = await batchFetchImages(Array.from(allImageUrls))
 
   for (const slide of slides) {
     const sl = pptx.addSlide()
